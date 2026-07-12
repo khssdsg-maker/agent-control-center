@@ -4,6 +4,16 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.3.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '技能系统读取真实数据（Claude Code/MiMo Code）' },
+      { type: 'feature', text: '支持按 Agent 筛选技能' },
+      { type: 'feature', text: '技能重新扫描功能' },
+      { type: 'improve', text: '优化技能卡片显示' },
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-07-12',
     changes: [

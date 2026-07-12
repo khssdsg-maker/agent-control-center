@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Check if process is running
   checkProcess: (processName: string) => ipcRenderer.invoke('check-process', processName),
 
+  // Skill scanner
+  scanSkills: () => ipcRenderer.invoke('scan-skills'),
+
   // Chat history scanner
   scanChatHistory: () => ipcRenderer.invoke('scan-chat-history'),
 
@@ -34,6 +37,7 @@ export type ElectronAPI = {
   scanAgents: () => Promise<any[]>
   extractIcon: (exePath: string) => Promise<string | null>
   checkProcess: (processName: string) => Promise<boolean>
+  scanSkills: () => Promise<any[]>
   scanChatHistory: () => Promise<any[]>
   launchAgent: (agentId: string) => Promise<{ success: boolean; message?: string; error?: string }>
   openPath: (fullPath: string) => Promise<void>

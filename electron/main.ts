@@ -3,6 +3,7 @@ import path from 'path'
 import { exec, execSync } from 'child_process'
 import { detectAgents } from './scanner'
 import { scanAllChatHistory } from './scanner/chat-history'
+import { scanAllSkills } from './scanner/skill-scanner'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -136,6 +137,12 @@ ipcMain.handle('scan-agents', async () => {
       }
     })
   })
+})
+
+// ========== Skill Scanner ==========
+ipcMain.handle('scan-skills', () => {
+  const homedir = process.env.USERPROFILE || process.env.HOME || ''
+  return scanAllSkills(homedir)
 })
 
 // ========== Chat History Scanner ==========

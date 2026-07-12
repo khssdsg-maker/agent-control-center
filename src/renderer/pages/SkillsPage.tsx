@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Trash2, Edit2 } from 'lucide-react'
+import { Plus, Search, Filter, Trash2, Edit2, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import { getAllSkills, addSkill, deleteSkill, type Skill, initDatabase } from '@/lib/db'
 
-const categories = ['全部', '代码', '调试', '部署', '分析', '自动化', '其他']
+interface RealSkill {
+  id: string
+  agentId: string
+  name: string
+  description: string
+  category: string
+  source: string
+}
 
-// Agent 信息映射
-const agentMap: Record<string, { name: string; icon: string }> = {
+const agentNames: Record<string, { name: string; icon: string }> = {
   mimocode: { name: 'MiMo Code', icon: '🤖' },
   claude: { name: 'Claude Code', icon: '🧠' },
   codex: { name: 'OpenAI Codex', icon: '⚡' },
@@ -21,68 +26,105 @@ const agentMap: Record<string, { name: string; icon: string }> = {
   antigravity: { name: 'Antigravity', icon: '🌌' },
 }
 
+const categories = ['全部', '代码', '调试', '部署', '分析', '自动化', '其他']
+
 function SkillsPage() {
-  const [skills, setSkills] = useState<Skill[]>([])
+  const [skills, setSkills] = useState<RealSkill[]>([])
+  const [loading, setLoading] = useState(true)
+  const [scanning, setScanning] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('全部')
   const [searchQuery, setSearchQuery] = useState('')
-  const [showEditor, setShowEditor] = useState(false)
-  const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
+  const [selectedAgent, setSelectedAgent] = useState('all')
 
   useEffect(() => {
-    initDatabase()
-    loadSkills()
+    loadFromCache()
   }, [])
 
-  function loadSkills() {
-    const allSkills = getAllSkills()
-    setSkills(allSkills)
+  function loadFromCache() {
+    const cached = localStorage.getItem('agent-skills-cache')
+    if (cached) {
+      setSkills(JSON.parse(cached))
+      setLoading(false)
+    } else {
+      scanSkills()
+    }
+  }
+
+  async function scanSkills() {
+    setScanning(true)
+    if (window.electronAPI?.scanSkills) {
+      const scanned = await window.electronAPI.scanSkills()
+      setSkills(scanned)
+      localStorage.setItem('agent-skills-cache', JSON.stringify(scanned))
+    }
+    setScanning(false)
+    setLoading(false)
   }
 
   const filteredSkills = skills.filter((s) => {
     const matchCategory = selectedCategory === '全部' || s.category === selectedCategory
+    const matchAgent = selectedAgent === 'all' || s.agentId === selectedAgent
     const matchSearch = !searchQuery ||
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    return matchCategory && matchSearch
+      s.description.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchCategory && matchAgent && matchSearch
   })
 
-  const handleDelete = (id: string) => {
-    deleteSkill(id)
-    loadSkills()
-  }
+  const agentCounts = skills.reduce((acc, s) => {
+    acc[s.agentId] = (acc[s.agentId] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
 
-  const handleAdd = () => {
-    setEditingSkill(null)
-    setShowEditor(true)
-  }
-
-  const handleEdit = (skill: Skill) => {
-    setEditingSkill(skill)
-    setShowEditor(true)
-  }
-
-  const handleSave = () => {
-    setShowEditor(false)
-    loadSkills()
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-full">
+        <p className="text-muted-foreground">加载技能...</p>
+      </div>
+    )
   }
 
   return (
     <div className="p-6 space-y-6">
-      {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Skills</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            管理所有 Agent 的技能 ({skills.length})
-          </p>
+          <p className="text-muted-foreground text-sm mt-1">扫描到 {skills.length} 个真实技能</p>
         </div>
-        <Button onClick={handleAdd}>
-          <Plus className="h-4 w-4 mr-2" />
-          添加技能
+        <Button onClick={scanSkills} disabled={scanning} variant="outline">
+          <RefreshCw className={`h-4 w-4 mr-2 ${scanning ? 'animate-spin' : ''}`} />
+          {scanning ? '扫描中...' : '重新扫描'}
         </Button>
       </div>
 
-      {/* 搜索和筛选 */}
+      {/* Agent 筛选 */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm text-muted-foreground">Agent:</span>
+        <button
+          onClick={() => setSelectedAgent('all')}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+            selectedAgent === 'all'
+              ? 'bg-blue-500/20 text-blue-400'
+              : 'bg-secondary text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          全部 ({skills.length})
+        </button>
+        {Object.entries(agentCounts).map(([id, count]) => (
+          <button
+            key={id}
+            onClick={() => setSelectedAgent(id)}
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              selectedAgent === id
+                ? 'bg-blue-500/20 text-blue-400'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {agentNames[id]?.icon} {agentNames[id]?.name} ({count})
+          </button>
+        ))}
+      </div>
+
+      {/* 搜索和分类筛选 */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -113,182 +155,37 @@ function SkillsPage() {
       </div>
 
       {/* 技能列表 */}
-      {filteredSkills.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground">暂无技能</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              点击「添加技能」创建第一个技能
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredSkills.map((skill) => {
-            const agent = agentMap[skill.agent_id] || { name: skill.agent_id, icon: '❓' }
-            return (
-              <Card key={skill.id} className="hover:border-blue-500/50 transition-colors group">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{agent.icon}</span>
-                        <span className="text-xs text-muted-foreground">{agent.name}</span>
-                      </div>
-                      <CardTitle className="text-base">{skill.name}</CardTitle>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleEdit(skill)}
-                        className="p-1 rounded hover:bg-secondary"
-                      >
-                        <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(skill.id)}
-                        className="p-1 rounded hover:bg-red-500/20"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                      </button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                    {skill.description || '暂无介绍'}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {skill.category && (
-                      <Badge variant="info">{skill.category}</Badge>
-                    )}
-                    {skill.is_builtin === 1 && (
-                      <Badge variant="secondary">内置</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
-      {/* 技能编辑器对话框 */}
-      {showEditor && (
-        <SkillEditor
-          skill={editingSkill}
-          onSave={handleSave}
-          onClose={() => setShowEditor(false)}
-        />
-      )}
-    </div>
-  )
-}
-
-// 技能编辑器对话框
-function SkillEditor({
-  skill,
-  onSave,
-  onClose,
-}: {
-  skill: Skill | null
-  onSave: () => void
-  onClose: () => void
-}) {
-  const [name, setName] = useState(skill?.name || '')
-  const [description, setDescription] = useState(skill?.description || '')
-  const [category, setCategory] = useState(skill?.category || '其他')
-  const [agentId, setAgentId] = useState(skill?.agent_id || 'mimocode')
-
-  const handleSave = () => {
-    if (!name.trim()) return
-
-    if (skill) {
-      // 编辑模式（暂用删除+新增模拟）
-      deleteSkill(skill.id)
-    }
-
-    addSkill({
-      agent_id: agentId,
-      name: name.trim(),
-      description: description.trim() || null,
-      category,
-      tags: null,
-      is_builtin: 0,
-    })
-
-    onSave()
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-card border border-border rounded-xl w-full max-w-md p-6 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-lg font-semibold">{skill ? '编辑技能' : '添加技能'}</h2>
-
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm text-muted-foreground">技能名称 *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="例如：代码编写"
-              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-muted-foreground">描述</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="技能的详细描述..."
-              rows={3}
-              className="w-full px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-muted-foreground">所属 Agent</label>
-            <select
-              value={agentId}
-              onChange={(e) => setAgentId(e.target.value)}
-              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="mimocode">MiMo Code</option>
-              <option value="claude">Claude Code</option>
-              <option value="codex">OpenAI Codex</option>
-              <option value="coffee">Coffee CLI</option>
-              <option value="doubao">豆包</option>
-              <option value="kimi">Kimi</option>
-              <option value="qianwen">千问</option>
-              <option value="yuanbao">腾讯元宝</option>
-              <option value="claw">龙虾 (Claw)</option>
-              <option value="antigravity">Antigravity</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-sm text-muted-foreground">分类</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {categories.filter((c) => c !== '全部').map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button variant="secondary" onClick={onClose}>取消</Button>
-          <Button onClick={handleSave}>保存</Button>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filteredSkills.map((skill) => (
+          <Card key={skill.id} className="hover:border-blue-500/50 transition-colors group">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{agentNames[skill.agentId]?.icon}</span>
+                  <CardTitle className="text-base">{skill.name}</CardTitle>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">{agentNames[skill.agentId]?.name}</p>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                {skill.description || '暂无描述'}
+              </p>
+              <div className="flex items-center gap-2">
+                {skill.category && <Badge variant="info">{skill.category}</Badge>}
+                <Badge variant="secondary">真实</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {filteredSkills.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>暂无匹配的技能</p>
+          <p className="text-sm mt-2">点击「重新扫描」获取最新技能</p>
+        </div>
+      )}
     </div>
   )
 }

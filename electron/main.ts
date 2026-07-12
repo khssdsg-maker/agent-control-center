@@ -4,7 +4,8 @@ import { exec, execSync } from 'child_process'
 import { detectAgents } from './scanner'
 import { scanAllChatHistory } from './scanner/chat-history'
 import { scanAllSkills } from './scanner/skill-scanner'
-import { getSettings, saveSettings, getAgentCache, saveAgentCache, getSkillsCache, saveSkillsCache, getTasks, saveTasks } from './store'
+import { getSettings, saveSettings, getAgentCache, saveAgentCache, getSkillsCache, saveSkillsCache, getTasks, saveTasks, getCustomAgents, saveCustomAgents } from './store'
+import { setMainWindow, setupNotificationIPC } from './notifier'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -24,6 +25,8 @@ function createWindow() {
     frame: false,
     titleBarStyle: 'hidden',
   })
+
+  setMainWindow(mainWindow)
 
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -192,5 +195,12 @@ ipcMain.handle('store-save-skills', (_event, skills) => { saveSkillsCache(skills
 
 ipcMain.handle('store-get-tasks', () => getTasks())
 ipcMain.handle('store-save-tasks', (_event, tasks) => { saveTasks(tasks); return true })
+
+// ========== Custom Agents ==========
+ipcMain.handle('store-get-custom-agents', () => getCustomAgents())
+ipcMain.handle('store-save-custom-agents', (_event, agents) => { saveCustomAgents(agents); return true })
+
+// ========== Notifications ==========
+setupNotificationIPC()
 
 

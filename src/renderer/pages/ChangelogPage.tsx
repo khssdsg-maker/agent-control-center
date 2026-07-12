@@ -4,6 +4,16 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.6.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '通知系统：任务完成/失败时弹出桌面通知' },
+      { type: 'feature', text: '通知开关：可在设置中开启/关闭通知' },
+      { type: 'feature', text: 'Agent 配置：手动添加自定义 Agent' },
+      { type: 'feature', text: '自定义 Agent 支持名称、描述、图标、类型配置' },
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-07-12',
     changes: [

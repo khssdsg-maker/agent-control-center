@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
-import { Settings, Save, RotateCcw, Palette, Globe, Image, Info, Upload, X } from 'lucide-react'
+import { Settings, Save, RotateCcw, Palette, Globe, Image, Info, Upload, X, Bell, BellOff, Plus, Trash2, Bot } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import Badge from '@/components/ui/Badge'
 import { t, setLanguage, type Language } from '@/lib/i18n'
 
 interface AppSettings {
   theme: 'dark' | 'light'
   language: 'zh' | 'en'
   agentIcons: Record<string, string>
+  notificationsEnabled: boolean
 }
 
 const defaultSettings: AppSettings = {
   theme: 'dark',
   language: 'zh',
   agentIcons: {},
+  notificationsEnabled: true,
 }
 
 const agentNames: Record<string, string> = {
@@ -29,6 +32,15 @@ const agentNames: Record<string, string> = {
   antigravity: 'Antigravity',
 }
 
+interface CustomAgent {
+  id: string
+  name: string
+  description: string
+  icon: string
+  type: 'cli' | 'desktop'
+  executablePath: string
+}
+
 function applyTheme(theme: 'dark' | 'light') {
   document.documentElement.classList.remove('dark', 'light')
   document.documentElement.classList.add(theme)
@@ -37,9 +49,30 @@ function applyTheme(theme: 'dark' | 'light') {
 function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings)
   const [saved, setSaved] = useState(false)
+  const [customAgents, setCustomAgents] = useState<CustomAgent[]>([])
+  const [showAddAgent, setShowAddAgent] = useState(false)
   const [, forceUpdate] = useState(0)
 
   useEffect(() => {
+    loadSettings()
+    loadCustomAgents()
+  }, [])
+
+  async function loadSettings() {
+    // 优先从数据库加载
+    if (window.electronAPI?.getSettings) {
+      const data = await window.electronAPI.getSettings()
+      if (data) {
+        setSettings({ ...defaultSettings, ...data })
+        applyTheme(data.theme || 'dark')
+        setLanguage(data.language || 'zh')
+        if (window.electronAPI?.setNotificationsEnabled) {
+          await window.electronAPI.setNotificationsEnabled(data.notificationsEnabled ?? true)
+        }
+        return
+      }
+    }
+    // 回退到 localStorage
     const savedSettings = localStorage.getItem('app-settings')
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings)
@@ -47,14 +80,20 @@ function SettingsPage() {
       applyTheme(parsed.theme || 'dark')
       setLanguage(parsed.language || 'zh')
     }
-  }, [])
+  }
 
-  useEffect(() => {
-    applyTheme(settings.theme)
-    setLanguage(settings.language)
-  }, [settings.theme, settings.language])
+  async function loadCustomAgents() {
+    if (window.electronAPI?.getCustomAgents) {
+      const agents = await window.electronAPI.getCustomAgents()
+      setCustomAgents(agents || [])
+    }
+  }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // 保存到数据库
+    if (window.electronAPI?.saveSettings) {
+      await window.electronAPI.saveSettings(settings)
+    }
     localStorage.setItem('app-settings', JSON.stringify(settings))
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -85,6 +124,37 @@ function SettingsPage() {
     })
   }
 
+  const handleToggleNotifications = async () => {
+    const newValue = !settings.notificationsEnabled
+    setSettings((prev) => ({ ...prev, notificationsEnabled: newValue }))
+    if (window.electronAPI?.setNotificationsEnabled) {
+      await window.electronAPI.setNotificationsEnabled(newValue)
+    }
+    if (newValue && window.electronAPI?.sendNotification) {
+      await window.electronAPI.sendNotification('通知已开启', '现在可以接收任务提醒了')
+    }
+  }
+
+  const handleAddCustomAgent = async (agent: Omit<CustomAgent, 'id'>) => {
+    const newAgent: CustomAgent = {
+      ...agent,
+      id: `custom-${Date.now()}`,
+    }
+    const updated = [...customAgents, newAgent]
+    setCustomAgents(updated)
+    if (window.electronAPI?.saveCustomAgents) {
+      await window.electronAPI.saveCustomAgents(updated)
+    }
+  }
+
+  const handleDeleteCustomAgent = async (id: string) => {
+    const updated = customAgents.filter((a) => a.id !== id)
+    setCustomAgents(updated)
+    if (window.electronAPI?.saveCustomAgents) {
+      await window.electronAPI.saveCustomAgents(updated)
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -103,6 +173,36 @@ function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      {/* 通知设置 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            通知设置
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">系统通知</p>
+              <p className="text-sm text-muted-foreground">任务完成、失败时弹出桌面通知</p>
+            </div>
+            <button
+              onClick={handleToggleNotifications}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                settings.notificationsEnabled ? 'bg-blue-500' : 'bg-secondary'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                  settings.notificationsEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 主题设置 */}
       <Card>
@@ -195,19 +295,13 @@ function SettingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            {t('settings.icons.desc')}
-          </p>
+          <p className="text-sm text-muted-foreground mb-4">{t('settings.icons.desc')}</p>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {Object.entries(agentNames).map(([id, name]) => (
               <div key={id} className="flex flex-col items-center p-3 border rounded-lg">
                 {settings.agentIcons[id] ? (
                   <div className="relative mb-2">
-                    <img
-                      src={settings.agentIcons[id]}
-                      alt={name}
-                      className="w-12 h-12 rounded-lg object-cover"
-                    />
+                    <img src={settings.agentIcons[id]} alt={name} className="w-12 h-12 rounded-lg object-cover" />
                     <button
                       onClick={() => handleRemoveIcon(id)}
                       className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
@@ -236,6 +330,48 @@ function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Agent 配置 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              Agent 配置
+            </CardTitle>
+            <Button size="sm" onClick={() => setShowAddAgent(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              添加 Agent
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">手动添加自定义 Agent</p>
+          {customAgents.length > 0 ? (
+            <div className="space-y-2">
+              {customAgents.map((agent) => (
+                <div key={agent.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{agent.icon}</span>
+                    <div>
+                      <p className="font-medium">{agent.name}</p>
+                      <p className="text-xs text-muted-foreground">{agent.description}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteCustomAgent(agent.id)}
+                    className="p-2 rounded hover:bg-red-500/20 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">暂无自定义 Agent</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* 关于 */}
       <Card>
         <CardHeader>
@@ -247,7 +383,7 @@ function SettingsPage() {
         <CardContent className="space-y-3">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t('settings.version')}</span>
-            <span className="font-medium">1.0.0</span>
+            <span className="font-medium">1.5.0</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t('settings.tech')}</span>
@@ -259,6 +395,75 @@ function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 添加 Agent 弹窗 */}
+      {showAddAgent && (
+        <AddAgentModal
+          onClose={() => setShowAddAgent(false)}
+          onAdd={handleAddCustomAgent}
+        />
+      )}
+    </div>
+  )
+}
+
+function AddAgentModal({ onClose, onAdd }: { onClose: () => void; onAdd: (agent: Omit<CustomAgent, 'id'>) => void }) {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [icon, setIcon] = useState('🤖')
+  const [type, setType] = useState<'cli' | 'desktop'>('cli')
+  const [executablePath, setExecutablePath] = useState('')
+
+  const handleAdd = () => {
+    if (!name.trim()) return
+    onAdd({ name: name.trim(), description: description.trim(), icon, type, executablePath })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-card border border-border rounded-xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">添加 Agent</h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-secondary"><X className="h-5 w-5" /></button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm text-muted-foreground">名称 *</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：My Agent"
+              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground">描述</label>
+            <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Agent 的功能描述"
+              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground">图标 (emoji)</label>
+            <input type="text" value={icon} onChange={(e) => setIcon(e.target.value)}
+              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground">类型</label>
+            <select value={type} onChange={(e) => setType(e.target.value as 'cli' | 'desktop')}
+              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="cli">CLI 命令行</option>
+              <option value="desktop">桌面应用</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground">可执行文件路径</label>
+            <input type="text" value={executablePath} onChange={(e) => setExecutablePath(e.target.value)} placeholder="C:\path\to\agent.exe"
+              className="w-full h-10 px-3 mt-1 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <Button variant="secondary" onClick={onClose}>取消</Button>
+          <Button onClick={handleAdd} disabled={!name.trim()}>添加</Button>
+        </div>
+      </div>
     </div>
   )
 }

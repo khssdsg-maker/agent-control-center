@@ -9,6 +9,7 @@ interface StoreData {
   agentCache: any[]
   skillsCache: any[]
   tasks: any[]
+  customAgents: any[]
 }
 
 const defaultData: StoreData = {
@@ -16,10 +17,12 @@ const defaultData: StoreData = {
     theme: 'dark',
     language: 'zh',
     agentIcons: {},
+    notificationsEnabled: true,
   },
   agentCache: [],
   skillsCache: [],
   tasks: [],
+  customAgents: [],
 }
 
 export function loadStore(): StoreData {
@@ -77,5 +80,15 @@ export function getTasks() {
 export function saveTasks(tasks: any[]) {
   const data = loadStore()
   data.tasks = tasks
+  saveStore(data)
+}
+
+export function getCustomAgents() {
+  return loadStore().customAgents
+}
+
+export function saveCustomAgents(agents: any[]) {
+  const data = loadStore()
+  data.customAgents = agents
   saveStore(data)
 }

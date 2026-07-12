@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, MessageSquare, Wrench, ListTodo, Settings, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Wrench, ListTodo, Settings, ChevronRight, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n'
 
 const statusColors: Record<string, string> = {
   online: 'bg-status-online',
@@ -118,11 +119,12 @@ function Sidebar() {
       </nav>
 
       <div className="border-t border-border p-2">
-        <NavItem to="/" icon={LayoutDashboard} label="仪表盘" active={location.pathname === '/'} />
-        <NavItem to="/skills" icon={Wrench} label="技能管理" active={location.pathname === '/skills'} />
-        <NavItem to="/chat" icon={MessageSquare} label="聊天记录" active={location.pathname === '/chat'} />
-        <NavItem to="/tasks" icon={ListTodo} label="任务中心" active={location.pathname === '/tasks'} />
-        <NavItem to="/settings" icon={Settings} label="设置" active={location.pathname === '/settings'} />
+        <NavItem to="/" icon={LayoutDashboard} label={t('nav.dashboard')} active={location.pathname === '/'} />
+        <NavItem to="/skills" icon={Wrench} label={t('nav.skills')} active={location.pathname === '/skills'} />
+        <NavItem to="/chat" icon={MessageSquare} label={t('nav.chat')} active={location.pathname === '/chat'} />
+        <NavItem to="/tasks" icon={ListTodo} label={t('nav.tasks')} active={location.pathname === '/tasks'} />
+        <NavItem to="/changelog" icon={FileText} label={t('nav.changelog')} active={location.pathname === '/changelog'} />
+        <NavItem to="/settings" icon={Settings} label={t('nav.settings')} active={location.pathname === '/settings'} />
       </div>
     </aside>
   )

@@ -71,27 +71,39 @@ ipcMain.handle('window-is-maximized', () => {
 
 // ========== Extract Icon from Exe ==========
 const iconDir = path.join(app.getPath('userData'), 'icons')
+const fs = require('fs')
 
 ipcMain.handle('extract-icon', (_event, exePath: string) => {
   try {
-    // 用 exe 路径生成唯一文件名
+    // 生成唯一文件名
     const fileName = Buffer.from(exePath).toString('base64url').substring(0, 50) + '.png'
     const iconPath = path.join(iconDir, fileName)
 
     // 检查是否已缓存
-    const fs = require('fs')
     if (fs.existsSync(iconPath)) {
       return iconPath
     }
 
-    const icon = nativeImage.createFromPath(exePath)
-    if (icon && !icon.isEmpty()) {
-      const resized = icon.resize({ width: 64, height: 64 })
-      // 确保目录存在
-      if (!fs.existsSync(iconDir)) {
-        fs.mkdirSync(iconDir, { recursive: true })
+    // 确保目录存在
+    if (!fs.existsSync(iconDir)) {
+      fs.mkdirSync(iconDir, { recursive: true })
+    }
+
+    // 用 PowerShell 提取图标
+    const psScript = `
+      Add-Type -AssemblyName System.Drawing
+      $icon = [System.Drawing.Icon]::ExtractAssociatedIcon("${exePath.replace(/\\/g, '\\\\')}")
+      if ($icon -ne $null) {
+        $bitmap = New-Object System.Drawing.Bitmap(64, 64)
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.DrawImage($icon.ToBitmap(), 0, 0, 64, 64)
+        $bitmap.Save("${iconPath.replace(/\\/g, '\\\\')}")
+        Write-Output "OK"
       }
-      fs.writeFileSync(iconPath, resized.toPNG())
+    `
+    execSync(`powershell -NoProfile -Command "${psScript}"`, { encoding: 'utf-8', timeout: 5000 })
+
+    if (fs.existsSync(iconPath)) {
       return iconPath
     }
     return null
@@ -111,8 +123,19 @@ ipcMain.handle('check-process', (_event, processName: string) => {
 })
 
 // ========== Agent Scanner ==========
-ipcMain.handle('scan-agents', () => {
-  return detectAgents()
+// 使用异步扫描，避免阻塞主线程
+ipcMain.handle('scan-agents', async () => {
+  return new Promise((resolve) => {
+    // 使用 setImmediate 让出主线程
+    setImmediate(() => {
+      try {
+        const agents = detectAgents()
+        resolve(agents)
+      } catch (err) {
+        resolve([])
+      }
+    })
+  })
 })
 
 // ========== Chat History Scanner ==========

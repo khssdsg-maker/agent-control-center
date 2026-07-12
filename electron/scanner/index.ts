@@ -28,7 +28,8 @@ function fileExists(p: string): boolean {
 
 function getDirSizeMB(dirPath: string): number {
   try {
-    const output = run(`powershell -Command "(Get-ChildItem -Path '${dirPath}' -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB"`)
+    // 使用更快的方式估算目录大小
+    const output = run(`powershell -NoProfile -Command "try { (Get-ChildItem -Path '${dirPath}' -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB } catch { 0 }"`)
     return Math.round(parseFloat(output) || 0)
   } catch { return 0 }
 }

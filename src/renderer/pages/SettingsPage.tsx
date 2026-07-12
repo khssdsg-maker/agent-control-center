@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Settings, Save, RotateCcw, Palette, Globe, Image, Info, Upload, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import { t, setLanguage, type Language } from '@/lib/i18n'
 
 interface AppSettings {
   theme: 'dark' | 'light'
@@ -28,23 +29,30 @@ const agentNames: Record<string, string> = {
   antigravity: 'Antigravity',
 }
 
+function applyTheme(theme: 'dark' | 'light') {
+  document.documentElement.classList.remove('dark', 'light')
+  document.documentElement.classList.add(theme)
+}
+
 function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings)
   const [saved, setSaved] = useState(false)
+  const [, forceUpdate] = useState(0)
 
   useEffect(() => {
     const savedSettings = localStorage.getItem('app-settings')
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings)
       setSettings({ ...defaultSettings, ...parsed })
+      applyTheme(parsed.theme || 'dark')
+      setLanguage(parsed.language || 'zh')
     }
   }, [])
 
-  // 应用主题
   useEffect(() => {
-    document.documentElement.classList.remove('dark', 'light')
-    document.documentElement.classList.add(settings.theme)
-  }, [settings.theme])
+    applyTheme(settings.theme)
+    setLanguage(settings.language)
+  }, [settings.theme, settings.language])
 
   const handleSave = () => {
     localStorage.setItem('app-settings', JSON.stringify(settings))
@@ -81,17 +89,17 @@ function SettingsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
           <p className="text-muted-foreground text-sm mt-1">应用设置与配置</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="secondary" onClick={handleReset}>
             <RotateCcw className="h-4 w-4 mr-2" />
-            重置
+            {t('settings.reset')}
           </Button>
           <Button onClick={handleSave}>
             <Save className="h-4 w-4 mr-2" />
-            {saved ? '已保存' : '保存设置'}
+            {saved ? t('settings.saved') : t('app.save')}
           </Button>
         </div>
       </div>
@@ -101,7 +109,7 @@ function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5" />
-            主题设置
+            {t('settings.theme')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -115,9 +123,9 @@ function SettingsPage() {
               }`}
             >
               <div className="w-full h-20 bg-[#0a0a0b] rounded mb-3 flex items-center justify-center">
-                <span className="text-white text-sm">深色主题</span>
+                <span className="text-white text-sm">{t('settings.theme.dark')}</span>
               </div>
-              <p className="text-sm font-medium">深色</p>
+              <p className="text-sm font-medium">{t('settings.theme.dark')}</p>
             </button>
             <button
               onClick={() => setSettings({ ...settings, theme: 'light' })}
@@ -128,9 +136,9 @@ function SettingsPage() {
               }`}
             >
               <div className="w-full h-20 bg-white rounded mb-3 flex items-center justify-center border">
-                <span className="text-black text-sm">浅色主题</span>
+                <span className="text-black text-sm">{t('settings.theme.light')}</span>
               </div>
-              <p className="text-sm font-medium">浅色</p>
+              <p className="text-sm font-medium">{t('settings.theme.light')}</p>
             </button>
           </div>
         </CardContent>
@@ -141,13 +149,16 @@ function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
-            语言设置
+            {t('settings.language')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setSettings({ ...settings, language: 'zh' })}
+              onClick={() => {
+                setSettings({ ...settings, language: 'zh' })
+                forceUpdate((n) => n + 1)
+              }}
               className={`px-6 py-3 rounded-lg border-2 transition-colors ${
                 settings.language === 'zh'
                   ? 'border-blue-500 bg-blue-500/10'
@@ -155,10 +166,13 @@ function SettingsPage() {
               }`}
             >
               <span className="text-2xl">🇨🇳</span>
-              <p className="text-sm mt-1">中文</p>
+              <p className="text-sm mt-1">{t('settings.language.zh')}</p>
             </button>
             <button
-              onClick={() => setSettings({ ...settings, language: 'en' })}
+              onClick={() => {
+                setSettings({ ...settings, language: 'en' })
+                forceUpdate((n) => n + 1)
+              }}
               className={`px-6 py-3 rounded-lg border-2 transition-colors ${
                 settings.language === 'en'
                   ? 'border-blue-500 bg-blue-500/10'
@@ -166,7 +180,7 @@ function SettingsPage() {
               }`}
             >
               <span className="text-2xl">🇺🇸</span>
-              <p className="text-sm mt-1">English</p>
+              <p className="text-sm mt-1">{t('settings.language.en')}</p>
             </button>
           </div>
         </CardContent>
@@ -177,12 +191,12 @@ function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Image className="h-5 w-5" />
-            Agent 图标自定义
+            {t('settings.icons')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            为每个 Agent 上传自定义图标，支持 PNG 格式
+            {t('settings.icons.desc')}
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {Object.entries(agentNames).map(([id, name]) => (
@@ -227,20 +241,20 @@ function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Info className="h-5 w-5" />
-            关于
+            {t('settings.about')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">版本</span>
+            <span className="text-muted-foreground">{t('settings.version')}</span>
             <span className="font-medium">1.0.0</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">技术栈</span>
+            <span className="text-muted-foreground">{t('settings.tech')}</span>
             <span className="font-medium">Electron + React + TypeScript</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">项目地址</span>
+            <span className="text-muted-foreground">{t('settings.github')}</span>
             <a href="https://github.com/khssdsg-maker/agent-control-center" target="_blank" className="text-blue-400 hover:underline">GitHub</a>
           </div>
         </CardContent>

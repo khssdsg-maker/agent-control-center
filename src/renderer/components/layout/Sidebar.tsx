@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, MessageSquare, Wrench, ListTodo, Settings, ChevronRight, FileText } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Wrench, ListTodo, Settings, ChevronRight, FileText, GitBranch, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { t, useLanguage } from '@/lib/i18n'
 
@@ -124,6 +124,8 @@ function Sidebar() {
         <NavItem to="/skills" icon={Wrench} label={t('nav.skills')} active={location.pathname === '/skills'} />
         <NavItem to="/chat" icon={MessageSquare} label={t('nav.chat')} active={location.pathname === '/chat'} />
         <NavItem to="/tasks" icon={ListTodo} label={t('nav.tasks')} active={location.pathname === '/tasks'} />
+        <NavItem to="/workflow" icon={GitBranch} label="工作流" active={location.pathname === '/workflow'} />
+        <NavItem to="/analytics" icon={BarChart3} label="数据分析" active={location.pathname === '/analytics'} />
         <NavItem to="/changelog" icon={FileText} label={t('nav.changelog')} active={location.pathname === '/changelog'} />
         <NavItem to="/settings" icon={Settings} label={t('nav.settings')} active={location.pathname === '/settings'} />
       </div>

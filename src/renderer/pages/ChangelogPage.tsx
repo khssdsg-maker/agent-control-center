@@ -4,6 +4,16 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.7.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '工作流编排系统：创建、编辑、运行多步骤工作流' },
+      { type: 'feature', text: '工作流步骤支持依赖关系' },
+      { type: 'feature', text: '数据分析面板：CPU/内存/任务趋势可视化' },
+      { type: 'feature', text: '任务完成率统计' },
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-07-12',
     changes: [

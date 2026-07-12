@@ -4,6 +4,17 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.2.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '任务系统完善：支持创建、执行、删除任务' },
+      { type: 'feature', text: '任务状态实时跟踪（等待/运行/完成/失败）' },
+      { type: 'feature', text: '任务优先级设置（低/普通/高）' },
+      { type: 'feature', text: '任务搜索和筛选功能' },
+      { type: 'improve', text: '优化任务页面 UI' },
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-07-12',
     changes: [

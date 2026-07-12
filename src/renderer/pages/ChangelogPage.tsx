@@ -4,6 +4,14 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.3.1',
+    date: '2026-07-12',
+    changes: [
+      { type: 'improve', text: '技能名称和描述添加中文翻译' },
+      { type: 'improve', text: '优化技能卡片显示效果' },
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-07-12',
     changes: [

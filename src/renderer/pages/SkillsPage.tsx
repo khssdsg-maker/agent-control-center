@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Trash2, Edit2, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
+import { translateSkillName, translateSkillDescription } from '@/lib/skill-translations'
 
 interface RealSkill {
   id: string
@@ -156,28 +157,32 @@ function SkillsPage() {
 
       {/* 技能列表 */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredSkills.map((skill) => (
-          <Card key={skill.id} className="hover:border-blue-500/50 transition-colors group">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{agentNames[skill.agentId]?.icon}</span>
-                  <CardTitle className="text-base">{skill.name}</CardTitle>
+        {filteredSkills.map((skill) => {
+          const displayName = translateSkillName(skill.name)
+          const displayDesc = translateSkillDescription(skill.description)
+          return (
+            <Card key={skill.id} className="hover:border-blue-500/50 transition-colors group">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{agentNames[skill.agentId]?.icon}</span>
+                    <CardTitle className="text-base">{displayName}</CardTitle>
+                  </div>
                 </div>
-              </div>
-              <p className="text-xs text-muted-foreground">{agentNames[skill.agentId]?.name}</p>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                {skill.description || '暂无描述'}
-              </p>
-              <div className="flex items-center gap-2">
-                {skill.category && <Badge variant="info">{skill.category}</Badge>}
-                <Badge variant="secondary">真实</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <p className="text-xs text-muted-foreground">{agentNames[skill.agentId]?.name}</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                  {displayDesc}
+                </p>
+                <div className="flex items-center gap-2">
+                  {skill.category && <Badge variant="info">{skill.category}</Badge>}
+                  <Badge variant="secondary">真实</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {filteredSkills.length === 0 && (

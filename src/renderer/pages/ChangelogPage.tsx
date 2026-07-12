@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.5.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '数据持久化：使用本地文件存储替代 localStorage' },
+      { type: 'feature', text: '设置、Agent 缓存、技能、任务数据全部持久化' },
+      { type: 'improve', text: '数据安全性提升，重启不丢失' },
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-07-12',
     changes: [

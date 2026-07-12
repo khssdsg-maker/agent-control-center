@@ -14,22 +14,24 @@ export interface Task {
   completedAt: string | null
 }
 
-const STORAGE_KEY = 'agent-tasks'
-
-// 获取所有任务
-export function getAllTasks(): Task[] {
-  const data = localStorage.getItem(STORAGE_KEY)
-  return data ? JSON.parse(data) : []
+// 获取所有任务（从数据库）
+export async function getAllTasks(): Promise<Task[]> {
+  if (window.electronAPI?.getTasks) {
+    return await window.electronAPI.getTasks()
+  }
+  return []
 }
 
-// 保存任务
-function saveTasks(tasks: Task[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
+// 保存任务到数据库
+async function saveTasks(tasks: Task[]) {
+  if (window.electronAPI?.saveTasks) {
+    await window.electronAPI.saveTasks(tasks)
+  }
 }
 
 // 创建任务
-export function createTask(task: Omit<Task, 'id' | 'createdAt' | 'status' | 'startedAt' | 'completedAt'>): Task {
-  const tasks = getAllTasks()
+export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'status' | 'startedAt' | 'completedAt'>): Promise<Task> {
+  const tasks = await getAllTasks()
   const newTask: Task = {
     ...task,
     id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -39,13 +41,13 @@ export function createTask(task: Omit<Task, 'id' | 'createdAt' | 'status' | 'sta
     completedAt: null,
   }
   tasks.unshift(newTask)
-  saveTasks(tasks)
+  await saveTasks(tasks)
   return newTask
 }
 
 // 更新任务状态
-export function updateTaskStatus(id: string, status: Task['status'], output?: string) {
-  const tasks = getAllTasks()
+export async function updateTaskStatus(id: string, status: Task['status'], output?: string) {
+  const tasks = await getAllTasks()
   const task = tasks.find((t) => t.id === id)
   if (task) {
     task.status = status
@@ -54,17 +56,17 @@ export function updateTaskStatus(id: string, status: Task['status'], output?: st
       task.completedAt = new Date().toISOString()
       if (output) task.output = output
     }
-    saveTasks(tasks)
+    await saveTasks(tasks)
   }
 }
 
 // 删除任务
-export function deleteTask(id: string) {
-  const tasks = getAllTasks().filter((t) => t.id !== id)
-  saveTasks(tasks)
+export async function deleteTask(id: string) {
+  const tasks = (await getAllTasks()).filter((t) => t.id !== id)
+  await saveTasks(tasks)
 }
 
 // 清空任务
-export function clearTasks() {
-  saveTasks([])
+export async function clearTasks() {
+  await saveTasks([])
 }

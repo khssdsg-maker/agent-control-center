@@ -27,6 +27,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Open external path
   openPath: (fullPath: string) => ipcRenderer.invoke('open-path', fullPath),
+
+  // Data store
+  getSettings: () => ipcRenderer.invoke('store-get-settings'),
+  saveSettings: (settings: any) => ipcRenderer.invoke('store-save-settings', settings),
+  getAgents: () => ipcRenderer.invoke('store-get-agents'),
+  saveAgents: (agents: any[]) => ipcRenderer.invoke('store-save-agents', agents),
+  getSkills: () => ipcRenderer.invoke('store-get-skills'),
+  saveSkills: (skills: any[]) => ipcRenderer.invoke('store-save-skills', skills),
+  getTasks: () => ipcRenderer.invoke('store-get-tasks'),
+  saveTasks: (tasks: any[]) => ipcRenderer.invoke('store-save-tasks', tasks),
 })
 
 export type ElectronAPI = {
@@ -41,4 +51,12 @@ export type ElectronAPI = {
   scanChatHistory: () => Promise<any[]>
   launchAgent: (agentId: string) => Promise<{ success: boolean; message?: string; error?: string }>
   openPath: (fullPath: string) => Promise<void>
+  getSettings: () => Promise<any>
+  saveSettings: (settings: any) => Promise<boolean>
+  getAgents: () => Promise<any[]>
+  saveAgents: (agents: any[]) => Promise<boolean>
+  getSkills: () => Promise<any[]>
+  saveSkills: (skills: any[]) => Promise<boolean>
+  getTasks: () => Promise<any[]>
+  saveTasks: (tasks: any[]) => Promise<boolean>
 }

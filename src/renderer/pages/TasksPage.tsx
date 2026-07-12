@@ -32,12 +32,12 @@ function TasksPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   useEffect(() => {
-    initDatabase()
     loadTasks()
   }, [])
 
-  function loadTasks() {
-    setTasks(getAllTasks())
+  async function loadTasks() {
+    const allTasks = await getAllTasks()
+    setTasks(allTasks)
   }
 
   const filteredTasks = tasks.filter((t) => {
@@ -48,31 +48,30 @@ function TasksPage() {
     return matchStatus && matchSearch
   })
 
-  const handleDelete = (id: string) => {
-    deleteTask(id)
-    loadTasks()
+  const handleDelete = async (id: string) => {
+    await deleteTask(id)
+    await loadTasks()
   }
 
   const handleRunTask = async (task: Task) => {
-    updateTaskStatus(task.id, 'running')
-    loadTasks()
+    await updateTaskStatus(task.id, 'running')
+    await loadTasks()
 
     try {
-      // 调用 Agent 执行任务
       if (window.electronAPI?.launchAgent) {
         const result = await window.electronAPI.launchAgent(task.agentId)
         if (result.success) {
-          updateTaskStatus(task.id, 'completed', `已启动 ${task.agentName}，请在弹出的窗口中完成任务`)
+          await updateTaskStatus(task.id, 'completed', `已启动 ${task.agentName}，请在弹出的窗口中完成任务`)
         } else {
-          updateTaskStatus(task.id, 'failed', `启动失败: ${result.error}`)
+          await updateTaskStatus(task.id, 'failed', `启动失败: ${result.error}`)
         }
       } else {
-        updateTaskStatus(task.id, 'completed', '任务已提交')
+        await updateTaskStatus(task.id, 'completed', '任务已提交')
       }
     } catch (err: any) {
-      updateTaskStatus(task.id, 'failed', `执行错误: ${err.message}`)
+      await updateTaskStatus(task.id, 'failed', `执行错误: ${err.message}`)
     }
-    loadTasks()
+    await loadTasks()
   }
 
   const stats = {
@@ -234,11 +233,11 @@ function CreateTaskModal({
     { id: 'antigravity', name: 'Antigravity', icon: '🌌' },
   ]
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!title.trim()) return
 
     const agent = agents.find((a) => a.id === agentId)
-    createTask({
+    await createTask({
       agentId,
       agentName: agent?.name || agentId,
       agentIcon: agent?.icon || '❓',

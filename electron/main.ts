@@ -4,6 +4,7 @@ import { exec, execSync } from 'child_process'
 import { detectAgents } from './scanner'
 import { scanAllChatHistory } from './scanner/chat-history'
 import { scanAllSkills } from './scanner/skill-scanner'
+import { getSettings, saveSettings, getAgentCache, saveAgentCache, getSkillsCache, saveSkillsCache, getTasks, saveTasks } from './store'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -178,5 +179,18 @@ ipcMain.handle('launch-agent', (_event, agentId: string) => {
 ipcMain.handle('open-path', (_event, fullPath: string) => {
   shell.openPath(fullPath)
 })
+
+// ========== Data Store ==========
+ipcMain.handle('store-get-settings', () => getSettings())
+ipcMain.handle('store-save-settings', (_event, settings) => { saveSettings(settings); return true })
+
+ipcMain.handle('store-get-agents', () => getAgentCache())
+ipcMain.handle('store-save-agents', (_event, agents) => { saveAgentCache(agents); return true })
+
+ipcMain.handle('store-get-skills', () => getSkillsCache())
+ipcMain.handle('store-save-skills', (_event, skills) => { saveSkillsCache(skills); return true })
+
+ipcMain.handle('store-get-tasks', () => getTasks())
+ipcMain.handle('store-save-tasks', (_event, tasks) => { saveTasks(tasks); return true })
 
 

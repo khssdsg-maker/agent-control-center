@@ -39,19 +39,21 @@ function Dashboard() {
     startMonitor()
   }, [])
 
-  function loadFromCache() {
-    const cached = localStorage.getItem('agent-scan-cache')
-    if (cached) {
-      setAgents(JSON.parse(cached))
-      setLoading(false)
-    } else {
-      scanAgents()
+  async function loadFromCache() {
+    // 从数据库加载缓存
+    if (window.electronAPI?.getAgents) {
+      const cached = await window.electronAPI.getAgents()
+      if (cached && cached.length > 0) {
+        setAgents(cached)
+        setLoading(false)
+        return
+      }
     }
+    scanAgents()
     // 加载自定义图标
-    const settings = localStorage.getItem('app-settings')
-    if (settings) {
-      const s = JSON.parse(settings)
-      if (s.agentIcons) setAgentIcons(s.agentIcons)
+    if (window.electronAPI?.getSettings) {
+      const settings = await window.electronAPI.getSettings()
+      if (settings?.agentIcons) setAgentIcons(settings.agentIcons)
     }
   }
 
@@ -60,7 +62,9 @@ function Dashboard() {
     if (window.electronAPI?.scanAgents) {
       const detected = await window.electronAPI.scanAgents()
       setAgents(detected)
-      localStorage.setItem('agent-scan-cache', JSON.stringify(detected))
+      if (window.electronAPI?.saveAgents) {
+        await window.electronAPI.saveAgents(detected)
+      }
     }
     setScanning(false)
     setLoading(false)

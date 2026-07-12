@@ -4,6 +4,22 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.1.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '添加更新日志页面' },
+      { type: 'feature', text: '添加中英文语言系统' },
+      { type: 'feature', text: '添加 Agent 图标自定义功能' },
+      { type: 'feature', text: '添加桌面快捷方式' },
+      { type: 'fix', text: '修复语言切换反向问题' },
+      { type: 'fix', text: '修复 localStorage 在主进程报错' },
+      { type: 'fix', text: '修复 Agent 状态显示（添加运行中检测）' },
+      { type: 'improve', text: '优化扫描异步处理，防止未响应' },
+      { type: 'improve', text: '优化设置页面布局' },
+      { type: 'improve', text: '优化仪表盘 UI（渐变卡片）' },
+    ],
+  },
+  {
     version: '1.0.0',
     date: '2026-07-12',
     changes: [

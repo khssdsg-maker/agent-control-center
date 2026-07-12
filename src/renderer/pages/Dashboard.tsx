@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { estimateCPU, getMemoryInfo, simulateAgentMetrics } from '@/lib/monitor'
+import { t, useLanguage } from '@/lib/i18n'
 
 const statusConfig: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'error' | 'secondary' }> = {
   online: { label: '在线', variant: 'success' },
@@ -24,6 +25,7 @@ function formatSize(mb: number): string {
 
 function Dashboard() {
   const navigate = useNavigate()
+  const lang = useLanguage()
   const [agents, setAgents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [scanning, setScanning] = useState(false)
@@ -82,7 +84,7 @@ function Dashboard() {
   const runningCount = agents.filter((a: any) => a.status === 'running').length
 
   if (loading) {
-    return <div className="p-6 flex items-center justify-center h-full"><p className="text-muted-foreground">加载中...</p></div>
+    return <div className="p-6 flex items-center justify-center h-full"><p className="text-muted-foreground">{t('app.loading')}</p></div>
   }
 
   return (
@@ -90,15 +92,15 @@ function Dashboard() {
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Overview</h1>
-          <p className="text-muted-foreground text-sm mt-1">检测到 {agents.length} 个 Agent</p>
+          <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t('dashboard.subtitle', { count: agents.length })}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="搜索..."
+              placeholder={t('dashboard.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9 pl-9 pr-4 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -106,7 +108,7 @@ function Dashboard() {
           </div>
           <Button onClick={scanAgents} disabled={scanning} size="sm" variant="outline">
             <RefreshCw className={`h-4 w-4 mr-1 ${scanning ? 'animate-spin' : ''}`} />
-            扫描
+            {scanning ? t('dashboard.scanning') : t('dashboard.scan')}
           </Button>
         </div>
       </div>
@@ -117,7 +119,7 @@ function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Agents</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.agents')}</p>
                 <p className="text-3xl font-bold">{agents.length}</p>
               </div>
               <Bot className="h-8 w-8 text-blue-400" />
@@ -128,7 +130,7 @@ function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">已安装</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.installed')}</p>
                 <p className="text-3xl font-bold">{onlineCount}</p>
               </div>
               <Activity className="h-8 w-8 text-green-400" />
@@ -139,7 +141,7 @@ function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">运行中</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.running')}</p>
                 <p className="text-3xl font-bold">{runningCount}</p>
               </div>
               <Zap className="h-8 w-8 text-orange-400" />
@@ -150,7 +152,7 @@ function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">CPU</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.cpu')}</p>
                 <p className="text-3xl font-bold">{systemCpu}%</p>
               </div>
               <Cpu className="h-8 w-8 text-purple-400" />
@@ -161,7 +163,7 @@ function Dashboard() {
 
       {/* Agent 列表 */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Agents</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('dashboard.detected')}</h2>
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredAgents.map((agent: any) => (
             <Card

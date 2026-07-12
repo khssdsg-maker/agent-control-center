@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, MessageSquare, Wrench, ListTodo, Settings, ChevronRight, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { t } from '@/lib/i18n'
+import { t, useLanguage } from '@/lib/i18n'
 
 const statusColors: Record<string, string> = {
   online: 'bg-status-online',
@@ -25,6 +25,7 @@ function Sidebar() {
   const [icons, setIcons] = useState<Record<string, string>>({})
   const location = useLocation()
   const navigate = useNavigate()
+  const lang = useLanguage() // 订阅语言变更
 
   useEffect(() => {
     loadAgents()

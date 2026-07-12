@@ -1,4 +1,20 @@
+import { useState, useEffect } from 'react'
+
 export type Language = 'zh' | 'en'
+
+// 语言变更事件
+let languageListeners: (() => void)[] = []
+
+export function onLanguageChange(listener: () => void) {
+  languageListeners.push(listener)
+  return () => {
+    languageListeners = languageListeners.filter((l) => l !== listener)
+  }
+}
+
+function notifyLanguageChange() {
+  languageListeners.forEach((l) => l())
+}
 
 const translations: Record<Language, Record<string, string>> = {
   zh: {
@@ -232,6 +248,7 @@ let currentLanguage: Language = 'zh'
 export function setLanguage(lang: Language) {
   currentLanguage = lang
   localStorage.setItem('app-language', lang)
+  notifyLanguageChange()
 }
 
 export function getLanguage(): Language {
@@ -240,6 +257,20 @@ export function getLanguage(): Language {
     currentLanguage = saved
   }
   return currentLanguage
+}
+
+// React Hook：订阅语言变更
+export function useLanguage() {
+  const [lang, setLang] = useState<Language>(getLanguage())
+
+  useEffect(() => {
+    const unsubscribe = onLanguageChange(() => {
+      setLang(getLanguage())
+    })
+    return unsubscribe
+  }, [])
+
+  return lang
 }
 
 export function t(key: string, params?: Record<string, string | number>): string {

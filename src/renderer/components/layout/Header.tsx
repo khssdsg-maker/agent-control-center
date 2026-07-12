@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom'
 import { Minus, Square, X, Search, Settings } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
 function Header() {
+  const navigate = useNavigate()
   const handleMinimize = () => window.electronAPI?.minimize()
   const handleMaximize = () => window.electronAPI?.maximize()
   const handleClose = () => window.electronAPI?.close()
@@ -31,6 +33,7 @@ function Header() {
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={() => navigate('/settings')}
         >
           <Settings className="h-4 w-4" />
         </Button>

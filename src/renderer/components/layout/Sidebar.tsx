@@ -11,20 +11,54 @@ const statusColors: Record<string, string> = {
   offline: 'bg-status-offline',
 }
 
+const statusLabels: Record<string, string> = {
+  online: '在线',
+  idle: '空闲',
+  running: '运行中',
+  error: '错误',
+  offline: '未安装',
+}
+
 function Sidebar() {
   const [agents, setAgents] = useState<any[]>([])
+  const [icons, setIcons] = useState<Record<string, string>>({})
   const location = useLocation()
   const navigate = useNavigate()
 
   useEffect(() => {
-    async function load() {
+    loadAgents()
+  }, [])
+
+  async function loadAgents() {
+    // 先从缓存加载
+    const cached = localStorage.getItem('agent-scan-cache')
+    if (cached) {
+      const data = JSON.parse(cached)
+      setAgents(data)
+      loadIcons(data)
+    } else {
+      // 重新扫描
       if (window.electronAPI?.scanAgents) {
         const detected = await window.electronAPI.scanAgents()
         setAgents(detected)
+        localStorage.setItem('agent-scan-cache', JSON.stringify(detected))
+        loadIcons(detected)
       }
     }
-    load()
-  }, [])
+  }
+
+  async function loadIcons(agentList: any[]) {
+    for (const agent of agentList) {
+      if (agent.iconPath && !icons[agent.id]) {
+        if (window.electronAPI?.extractIcon) {
+          const iconPath = await window.electronAPI.extractIcon(agent.iconPath)
+          if (iconPath) {
+            setIcons((prev) => ({ ...prev, [agent.id]: iconPath }))
+          }
+        }
+      }
+    }
+  }
 
   const handleAgentClick = (agentId: string) => {
     navigate(`/agent/${agentId}`)
@@ -32,14 +66,12 @@ function Sidebar() {
 
   return (
     <aside className="w-60 border-r border-border bg-card/50 flex flex-col h-full">
-      {/* Agent 列表标题 */}
       <div className="p-4 border-b border-border">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Agents ({agents.length})
         </h2>
       </div>
 
-      {/* Agent 列表 */}
       <nav className="flex-1 overflow-y-auto p-2">
         {agents.map((agent) => (
           <button
@@ -52,21 +84,39 @@ function Sidebar() {
             )}
           >
             <div className="relative flex-shrink-0">
-              <span className="text-lg">{agent.icon}</span>
+              {/* 使用真实图标 */}
+              {icons[agent.id] ? (
+                <img
+                  src={icons[agent.id]}
+                  alt={agent.name}
+                  className="w-6 h-6 rounded"
+                  onError={(e) => {
+                    // 图标加载失败，显示 emoji
+                    ;(e.target as HTMLImageElement).style.display = 'none'
+                  }}
+                />
+              ) : (
+                <span className="text-lg">{agent.icon}</span>
+              )}
               <span
                 className={cn(
                   'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card',
                   statusColors[agent.status] || 'bg-status-offline'
                 )}
+                title={statusLabels[agent.status] || agent.status}
               />
             </div>
-            <span className="flex-1 text-sm truncate">{agent.name}</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-sm truncate block">{agent.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {statusLabels[agent.status] || agent.status}
+              </span>
+            </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         ))}
       </nav>
 
-      {/* 底部导航 */}
       <div className="border-t border-border p-2">
         <NavItem to="/" icon={LayoutDashboard} label="仪表盘" active={location.pathname === '/'} />
         <NavItem to="/skills" icon={Wrench} label="技能管理" active={location.pathname === '/skills'} />

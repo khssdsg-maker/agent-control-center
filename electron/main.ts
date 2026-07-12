@@ -1,6 +1,6 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, nativeImage } from 'electron'
 import path from 'path'
-import { exec } from 'child_process'
+import { exec, execSync } from 'child_process'
 import { detectAgents } from './scanner'
 import { scanAllChatHistory } from './scanner/chat-history'
 
@@ -67,6 +67,47 @@ ipcMain.on('window-close', () => {
 
 ipcMain.handle('window-is-maximized', () => {
   return mainWindow?.isMaximized() ?? false
+})
+
+// ========== Extract Icon from Exe ==========
+const iconDir = path.join(app.getPath('userData'), 'icons')
+
+ipcMain.handle('extract-icon', (_event, exePath: string) => {
+  try {
+    // 用 exe 路径生成唯一文件名
+    const fileName = Buffer.from(exePath).toString('base64url').substring(0, 50) + '.png'
+    const iconPath = path.join(iconDir, fileName)
+
+    // 检查是否已缓存
+    const fs = require('fs')
+    if (fs.existsSync(iconPath)) {
+      return iconPath
+    }
+
+    const icon = nativeImage.createFromPath(exePath)
+    if (icon && !icon.isEmpty()) {
+      const resized = icon.resize({ width: 64, height: 64 })
+      // 确保目录存在
+      if (!fs.existsSync(iconDir)) {
+        fs.mkdirSync(iconDir, { recursive: true })
+      }
+      fs.writeFileSync(iconPath, resized.toPNG())
+      return iconPath
+    }
+    return null
+  } catch {
+    return null
+  }
+})
+
+// ========== Check if Process Running ==========
+ipcMain.handle('check-process', (_event, processName: string) => {
+  try {
+    const output = execSync(`tasklist /FI "IMAGENAME eq ${processName}" 2>nul`, { encoding: 'utf-8' })
+    return output.toLowerCase().includes(processName.toLowerCase())
+  } catch {
+    return false
+  }
 })
 
 // ========== Agent Scanner ==========

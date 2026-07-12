@@ -27,10 +27,20 @@ const agentMap: Record<string, { name: string; icon: string; description: string
 
 const statusConfig: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'error' | 'secondary' }> = {
   online: { label: '在线', variant: 'success' },
-  idle: { label: '已安装', variant: 'success' },
+  idle: { label: '空闲', variant: 'secondary' },
   running: { label: '运行中', variant: 'info' },
   error: { label: '错误', variant: 'error' },
   offline: { label: '未安装', variant: 'secondary' },
+}
+
+// 获取自定义图标
+function getCustomIcon(agentId: string): string | null {
+  const settings = localStorage.getItem('app-settings')
+  if (settings) {
+    const s = JSON.parse(settings)
+    return s.agentIcons?.[agentId] || null
+  }
+  return null
 }
 
 function formatSize(mb: number): string {
@@ -116,6 +126,8 @@ function AgentDetailPage() {
     }
   }
 
+  const customIcon = agentId ? getCustomIcon(agentId) : null
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* 顶部导航栏 */}
@@ -126,7 +138,11 @@ function AgentDetailPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <span className="text-2xl">{info.icon}</span>
+        {customIcon ? (
+          <img src={customIcon} alt={info.name} className="w-8 h-8 rounded-lg" />
+        ) : (
+          <span className="text-2xl">{info.icon}</span>
+        )}
         <div className="flex-1">
           <h1 className="text-xl font-bold">{info.name}</h1>
           <p className="text-sm text-muted-foreground">{info.description}</p>

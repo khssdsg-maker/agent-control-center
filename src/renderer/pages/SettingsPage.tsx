@@ -1,21 +1,31 @@
 import { useState, useEffect } from 'react'
-import { Settings, Save, RotateCcw, FolderOpen, Info } from 'lucide-react'
+import { Settings, Save, RotateCcw, Palette, Globe, Image, Info, Upload, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { initDatabase } from '@/lib/db'
 
 interface AppSettings {
   theme: 'dark' | 'light'
-  autoScan: boolean
-  scanInterval: number
-  defaultAgent: string
+  language: 'zh' | 'en'
+  agentIcons: Record<string, string>
 }
 
 const defaultSettings: AppSettings = {
   theme: 'dark',
-  autoScan: true,
-  scanInterval: 5,
-  defaultAgent: 'mimocode',
+  language: 'zh',
+  agentIcons: {},
+}
+
+const agentNames: Record<string, string> = {
+  mimocode: 'MiMo Code',
+  claude: 'Claude Code',
+  codex: 'OpenAI Codex',
+  coffee: 'Coffee CLI',
+  doubao: '豆包',
+  kimi: 'Kimi',
+  qianwen: '千问',
+  yuanbao: '腾讯元宝',
+  claw: '龙虾 (Claw)',
+  antigravity: 'Antigravity',
 }
 
 function SettingsPage() {
@@ -23,13 +33,18 @@ function SettingsPage() {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    initDatabase()
-    // 加载保存的设置
     const savedSettings = localStorage.getItem('app-settings')
     if (savedSettings) {
-      setSettings(JSON.parse(savedSettings))
+      const parsed = JSON.parse(savedSettings)
+      setSettings({ ...defaultSettings, ...parsed })
     }
   }, [])
+
+  // 应用主题
+  useEffect(() => {
+    document.documentElement.classList.remove('dark', 'light')
+    document.documentElement.classList.add(settings.theme)
+  }, [settings.theme])
 
   const handleSave = () => {
     localStorage.setItem('app-settings', JSON.stringify(settings))
@@ -42,15 +57,32 @@ function SettingsPage() {
     localStorage.removeItem('app-settings')
   }
 
+  const handleIconUpload = (agentId: string, file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string
+      setSettings((prev) => ({
+        ...prev,
+        agentIcons: { ...prev.agentIcons, [agentId]: dataUrl },
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveIcon = (agentId: string) => {
+    setSettings((prev) => {
+      const newIcons = { ...prev.agentIcons }
+      delete newIcons[agentId]
+      return { ...prev, agentIcons: newIcons }
+    })
+  }
+
   return (
     <div className="p-6 space-y-6">
-      {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            应用设置与配置
-          </p>
+          <p className="text-muted-foreground text-sm mt-1">应用设置与配置</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="secondary" onClick={handleReset}>
@@ -64,102 +96,128 @@ function SettingsPage() {
         </div>
       </div>
 
-      {/* 通用设置 */}
+      {/* 主题设置 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            通用设置
+            <Palette className="h-5 w-5" />
+            主题设置
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* 主题 */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">主题</p>
-              <p className="text-sm text-muted-foreground">选择应用主题</p>
-            </div>
-            <select
-              value={settings.theme}
-              onChange={(e) => setSettings({ ...settings, theme: e.target.value as 'dark' | 'light' })}
-              className="h-10 px-4 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => setSettings({ ...settings, theme: 'dark' })}
+              className={`p-4 rounded-lg border-2 transition-colors ${
+                settings.theme === 'dark'
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-border hover:border-border/80'
+              }`}
             >
-              <option value="dark">深色</option>
-              <option value="light">浅色</option>
-            </select>
-          </div>
-
-          {/* 默认 Agent */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">默认 Agent</p>
-              <p className="text-sm text-muted-foreground">新建任务时使用的默认 Agent</p>
-            </div>
-            <select
-              value={settings.defaultAgent}
-              onChange={(e) => setSettings({ ...settings, defaultAgent: e.target.value })}
-              className="h-10 px-4 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="w-full h-20 bg-[#0a0a0b] rounded mb-3 flex items-center justify-center">
+                <span className="text-white text-sm">深色主题</span>
+              </div>
+              <p className="text-sm font-medium">深色</p>
+            </button>
+            <button
+              onClick={() => setSettings({ ...settings, theme: 'light' })}
+              className={`p-4 rounded-lg border-2 transition-colors ${
+                settings.theme === 'light'
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-border hover:border-border/80'
+              }`}
             >
-              <option value="mimocode">MiMo Code</option>
-              <option value="claude">Claude Code</option>
-              <option value="codex">OpenAI Codex</option>
-              <option value="doubao">豆包</option>
-              <option value="kimi">Kimi</option>
-              <option value="qianwen">千问</option>
-              <option value="yuanbao">腾讯元宝</option>
-              <option value="claw">龙虾 (Claw)</option>
-              <option value="antigravity">Antigravity</option>
-            </select>
+              <div className="w-full h-20 bg-white rounded mb-3 flex items-center justify-center border">
+                <span className="text-black text-sm">浅色主题</span>
+              </div>
+              <p className="text-sm font-medium">浅色</p>
+            </button>
           </div>
         </CardContent>
       </Card>
 
-      {/* 扫描设置 */}
+      {/* 语言设置 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            Agent 扫描设置
+            <Globe className="h-5 w-5" />
+            语言设置
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* 自动扫描 */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">自动扫描</p>
-              <p className="text-sm text-muted-foreground">启动时自动扫描已安装的 Agent</p>
-            </div>
+        <CardContent>
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setSettings({ ...settings, autoScan: !settings.autoScan })}
-              className={`w-12 h-6 rounded-full transition-colors ${
-                settings.autoScan ? 'bg-blue-500' : 'bg-secondary'
+              onClick={() => setSettings({ ...settings, language: 'zh' })}
+              className={`px-6 py-3 rounded-lg border-2 transition-colors ${
+                settings.language === 'zh'
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-border hover:border-border/80'
               }`}
             >
-              <div
-                className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                  settings.autoScan ? 'translate-x-6' : 'translate-x-0.5'
-                }`}
-              />
+              <span className="text-2xl">🇨🇳</span>
+              <p className="text-sm mt-1">中文</p>
+            </button>
+            <button
+              onClick={() => setSettings({ ...settings, language: 'en' })}
+              className={`px-6 py-3 rounded-lg border-2 transition-colors ${
+                settings.language === 'en'
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-border hover:border-border/80'
+              }`}
+            >
+              <span className="text-2xl">🇺🇸</span>
+              <p className="text-sm mt-1">English</p>
             </button>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* 扫描间隔 */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">扫描间隔</p>
-              <p className="text-sm text-muted-foreground">自动扫描的时间间隔（分钟）</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min="1"
-                max="30"
-                value={settings.scanInterval}
-                onChange={(e) => setSettings({ ...settings, scanInterval: parseInt(e.target.value) })}
-                className="w-32"
-              />
-              <span className="w-12 text-center text-sm">{settings.scanInterval} 分钟</span>
-            </div>
+      {/* Agent 图标自定义 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Image className="h-5 w-5" />
+            Agent 图标自定义
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            为每个 Agent 上传自定义图标，支持 PNG 格式
+          </p>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {Object.entries(agentNames).map(([id, name]) => (
+              <div key={id} className="flex flex-col items-center p-3 border rounded-lg">
+                {settings.agentIcons[id] ? (
+                  <div className="relative mb-2">
+                    <img
+                      src={settings.agentIcons[id]}
+                      alt={name}
+                      className="w-12 h-12 rounded-lg object-cover"
+                    />
+                    <button
+                      onClick={() => handleRemoveIcon(id)}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                    >
+                      <X className="h-3 w-3 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-12 h-12 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-blue-500 mb-2">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleIconUpload(id, file)
+                      }}
+                    />
+                  </label>
+                )}
+                <span className="text-xs text-center text-muted-foreground">{name}</span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -168,29 +226,22 @@ function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
+            <Info className="h-5 w-5" />
             关于
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">版本</p>
-            <p className="font-medium">1.0.0</p>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">版本</span>
+            <span className="font-medium">1.0.0</span>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">项目地址</p>
-            <a
-              href="https://github.com/khssdsg-maker/agent-control-center"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:underline"
-            >
-              GitHub
-            </a>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">技术栈</span>
+            <span className="font-medium">Electron + React + TypeScript</span>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">技术栈</p>
-            <p className="font-medium">Electron + React + TypeScript</p>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">项目地址</span>
+            <a href="https://github.com/khssdsg-maker/agent-control-center" target="_blank" className="text-blue-400 hover:underline">GitHub</a>
           </div>
         </CardContent>
       </Card>

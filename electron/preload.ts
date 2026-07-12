@@ -10,6 +10,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Agent scanner
   scanAgents: () => ipcRenderer.invoke('scan-agents'),
 
+  // Extract icon from exe
+  extractIcon: (exePath: string) => ipcRenderer.invoke('extract-icon', exePath),
+
+  // Check if process is running
+  checkProcess: (processName: string) => ipcRenderer.invoke('check-process', processName),
+
   // Chat history scanner
   scanChatHistory: () => ipcRenderer.invoke('scan-chat-history'),
 
@@ -26,6 +32,8 @@ export type ElectronAPI = {
   close: () => void
   isMaximized: () => Promise<boolean>
   scanAgents: () => Promise<any[]>
+  extractIcon: (exePath: string) => Promise<string | null>
+  checkProcess: (processName: string) => Promise<boolean>
   scanChatHistory: () => Promise<any[]>
   launchAgent: (agentId: string) => Promise<{ success: boolean; message?: string; error?: string }>
   openPath: (fullPath: string) => Promise<void>

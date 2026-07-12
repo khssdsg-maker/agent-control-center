@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
+import { exec } from 'child_process'
 import { detectAgents } from './scanner'
+import { scanAllChatHistory } from './scanner/chat-history'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -70,6 +72,35 @@ ipcMain.handle('window-is-maximized', () => {
 // ========== Agent Scanner ==========
 ipcMain.handle('scan-agents', () => {
   return detectAgents()
+})
+
+// ========== Chat History Scanner ==========
+ipcMain.handle('scan-chat-history', () => {
+  const homedir = process.env.USERPROFILE || process.env.HOME || ''
+  return scanAllChatHistory(homedir)
+})
+
+// ========== Launch Agent ==========
+ipcMain.handle('launch-agent', (_event, agentId: string) => {
+  const agents = detectAgents()
+  const agent = agents.find((a) => a.id === agentId)
+  if (!agent || !agent.launchCommand) {
+    return { success: false, error: 'Agent 未安装或无法启动' }
+  }
+
+  try {
+    // CLI 类型在新的终端窗口中启动
+    if (agent.type === 'cli') {
+      const cmd = `start cmd /k ${agent.launchCommand}`
+      exec(cmd)
+    } else {
+      // 桌面类型直接启动
+      exec(agent.launchCommand)
+    }
+    return { success: true, message: `已启动 ${agent.name}` }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
 })
 
 // ========== Open External ==========

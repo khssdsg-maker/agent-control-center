@@ -1,5 +1,5 @@
 import { execSync } from 'child_process'
-import { existsSync, statSync } from 'fs'
+import { existsSync } from 'fs'
 
 export interface DetectedAgent {
   id: string
@@ -11,7 +11,9 @@ export interface DetectedAgent {
   executablePath: string | null
   configPath: string | null
   dataPath: string | null
-  diskSpace: number // MB
+  diskSpace: number
+  launchCommand: string | null
+  chatSessionPath: string | null
 }
 
 function run(cmd: string): string {
@@ -23,43 +25,27 @@ function run(cmd: string): string {
 }
 
 function fileExists(p: string): boolean {
-  try {
-    return existsSync(p)
-  } catch {
-    return false
-  }
+  try { return existsSync(p) } catch { return false }
 }
 
-// 计算目录大小（MB）
 function getDirSizeMB(dirPath: string): number {
   try {
     const output = run(`powershell -Command "(Get-ChildItem -Path '${dirPath}' -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB"`)
     return Math.round(parseFloat(output) || 0)
-  } catch {
-    return 0
-  }
-}
-
-// 检查进程是否运行
-function isProcessRunning(processName: string): boolean {
-  try {
-    const output = run(`tasklist /FI "IMAGENAME eq ${processName}" 2>nul`)
-    return output.includes(processName)
-  } catch {
-    return false
-  }
+  } catch { return 0 }
 }
 
 export function detectAgents(): DetectedAgent[] {
   const agents: DetectedAgent[] = []
   const homedir = process.env.USERPROFILE || process.env.HOME || ''
 
-  // 1. MiMo Code - 检查 npm 全局安装 + .mimocode 配置目录
+  // 1. MiMo Code
   const mimoCmd = `${homedir}/AppData/Roaming/npm/mimo.cmd`
   const mimoConfig = `${homedir}/.mimocode`
   const mimoDesktop = `${homedir}/Desktop/.mimocode`
   const mimoInstalled = fileExists(mimoCmd)
   const mimoConfigExists = fileExists(mimoConfig) || fileExists(mimoDesktop)
+  const mimoSessions = `${homedir}/.local/share/mimocode/memory/sessions`
   agents.push({
     id: 'mimocode',
     name: 'MiMo Code',
@@ -71,12 +57,15 @@ export function detectAgents(): DetectedAgent[] {
     configPath: mimoConfigExists ? (fileExists(mimoConfig) ? mimoConfig : mimoDesktop) : null,
     dataPath: mimoConfigExists ? (fileExists(mimoConfig) ? mimoConfig : mimoDesktop) : null,
     diskSpace: mimoConfigExists ? getDirSizeMB(fileExists(mimoConfig) ? mimoConfig : mimoDesktop) : 0,
+    launchCommand: mimoInstalled ? 'mimo' : null,
+    chatSessionPath: fileExists(mimoSessions) ? mimoSessions : null,
   })
 
   // 2. Claude Code
   const claudeCmd = `${homedir}/.local/bin/claude`
   const claudeConfig = `${homedir}/.claude`
   const claudeInstalled = fileExists(claudeCmd) || !!run('where claude 2>nul')
+  const claudeProjects = `${homedir}/.claude/projects`
   agents.push({
     id: 'claude',
     name: 'Claude Code',
@@ -88,9 +77,11 @@ export function detectAgents(): DetectedAgent[] {
     configPath: fileExists(claudeConfig) ? claudeConfig : null,
     dataPath: fileExists(claudeConfig) ? claudeConfig : null,
     diskSpace: fileExists(claudeConfig) ? getDirSizeMB(claudeConfig) : 0,
+    launchCommand: claudeInstalled ? 'claude' : null,
+    chatSessionPath: fileExists(claudeProjects) ? claudeProjects : null,
   })
 
-  // 3. OpenAI Codex - 检查 npm 全局包
+  // 3. OpenAI Codex
   const codexNpmDir = `${homedir}/AppData/Roaming/npm/node_modules/@openai/codex`
   const codexLocalDir = `${homedir}/AppData/Local/OpenAI/Codex`
   const codexInstalled = fileExists(codexNpmDir) || fileExists(codexLocalDir) || !!run('where codex 2>nul')
@@ -106,6 +97,8 @@ export function detectAgents(): DetectedAgent[] {
     configPath: fileExists(codexNpmDir) ? codexNpmDir : null,
     dataPath: fileExists(codexLocalDir) ? codexLocalDir : null,
     diskSpace: fileExists(codexLocalDir) ? getDirSizeMB(codexLocalDir) : (fileExists(codexNpmDir) ? getDirSizeMB(codexNpmDir) : 0),
+    launchCommand: codexInstalled ? 'codex' : null,
+    chatSessionPath: null,
   })
 
   // 4. Coffee CLI
@@ -122,6 +115,8 @@ export function detectAgents(): DetectedAgent[] {
     configPath: null,
     dataPath: fileExists(coffeeDir) ? coffeeDir : null,
     diskSpace: fileExists(coffeeDir) ? getDirSizeMB(coffeeDir) : 0,
+    launchCommand: fileExists(coffeePath) ? `"${coffeePath}"` : null,
+    chatSessionPath: null,
   })
 
   // 5. 豆包 (Doubao)
@@ -138,6 +133,8 @@ export function detectAgents(): DetectedAgent[] {
     configPath: null,
     dataPath: fileExists(doubaoData) ? doubaoData : null,
     diskSpace: fileExists(doubaoData) ? getDirSizeMB(doubaoData) : 0,
+    launchCommand: fileExists(doubaoPath) ? `"${doubaoPath}"` : null,
+    chatSessionPath: null,
   })
 
   // 6. Kimi
@@ -155,10 +152,13 @@ export function detectAgents(): DetectedAgent[] {
     configPath: null,
     dataPath: fileExists(kimiData) ? kimiData : null,
     diskSpace: fileExists(kimiDir) ? getDirSizeMB(kimiDir) : 0,
+    launchCommand: fileExists(kimiPath) ? `"${kimiPath}"` : null,
+    chatSessionPath: fileExists(kimiData) ? kimiData : null,
   })
 
   // 7. 千问 (Qianwen)
   const qianwenData = `${homedir}/AppData/Local/Qianwen`
+  const qianwenExe = `${homedir}/AppData/Local/Qianwen/app-*/Qianwen.exe`
   agents.push({
     id: 'qianwen',
     name: '千问',
@@ -170,6 +170,8 @@ export function detectAgents(): DetectedAgent[] {
     configPath: null,
     dataPath: fileExists(qianwenData) ? qianwenData : null,
     diskSpace: fileExists(qianwenData) ? getDirSizeMB(qianwenData) : 0,
+    launchCommand: fileExists(qianwenData) ? `start "" "${qianwenExe}"` : null,
+    chatSessionPath: fileExists(qianwenData) ? qianwenData : null,
   })
 
   // 8. 腾讯元宝 (Yuanbao)
@@ -186,6 +188,8 @@ export function detectAgents(): DetectedAgent[] {
     configPath: null,
     dataPath: null,
     diskSpace: fileExists(yuanbaoDir) ? getDirSizeMB(yuanbaoDir) : 0,
+    launchCommand: fileExists(yuanbaoPath) ? `"${yuanbaoPath}"` : null,
+    chatSessionPath: null,
   })
 
   // 9. 龙虾 (Claw / WorkBuddy)
@@ -202,6 +206,8 @@ export function detectAgents(): DetectedAgent[] {
     configPath: fileExists(clawConfig) ? clawConfig : null,
     dataPath: fileExists(clawPath) ? clawPath : null,
     diskSpace: fileExists(clawConfig) ? getDirSizeMB(clawConfig) : 0,
+    launchCommand: fileExists(clawPath) ? `cd "${clawPath}" && claude` : null,
+    chatSessionPath: fileExists(clawConfig) ? clawConfig : null,
   })
 
   // 10. Google Antigravity
@@ -219,6 +225,8 @@ export function detectAgents(): DetectedAgent[] {
     configPath: null,
     dataPath: fileExists(antigravityData) ? antigravityData : null,
     diskSpace: fileExists(antigravityDir) ? getDirSizeMB(antigravityDir) : 0,
+    launchCommand: fileExists(antigravityPath) ? `"${antigravityPath}"` : null,
+    chatSessionPath: fileExists(antigravityData) ? antigravityData : null,
   })
 
   return agents

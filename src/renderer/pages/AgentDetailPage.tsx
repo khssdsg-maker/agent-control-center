@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Send, Wrench, MessageSquare, Terminal,
   HardDrive, Cpu, MemoryStick, FolderOpen, Star,
-  Trash2, Edit2, Plus, X
+  Trash2, Edit2, Plus, X, Play, ExternalLink
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -118,6 +118,17 @@ function AgentDetailPage() {
     setShowSkillEditor(false)
   }
 
+  const handleLaunchAgent = async () => {
+    if (agentId && window.electronAPI?.launchAgent) {
+      const result = await window.electronAPI.launchAgent(agentId)
+      if (result.success) {
+        alert(`已启动 ${info.name}`)
+      } else {
+        alert(`启动失败: ${result.error}`)
+      }
+    }
+  }
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* 顶部导航栏 */}
@@ -159,15 +170,23 @@ function AgentDetailPage() {
             </div>
           </>
         )}
-        {(agentInfo?.executablePath || agentInfo?.dataPath) && (
-          <button
-            onClick={() => handleOpenPath(agentInfo.dataPath || agentInfo.executablePath)}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors ml-auto"
-          >
-            <FolderOpen className="h-4 w-4" />
-            打开目录
-          </button>
-        )}
+        <div className="flex items-center gap-3 ml-auto">
+          {agentInfo?.status !== 'offline' && (
+            <Button onClick={handleLaunchAgent} size="sm">
+              <Play className="h-4 w-4 mr-1" />
+              启动 {info.name}
+            </Button>
+          )}
+          {(agentInfo?.executablePath || agentInfo?.dataPath) && (
+            <button
+              onClick={() => handleOpenPath(agentInfo.dataPath || agentInfo.executablePath)}
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <FolderOpen className="h-4 w-4" />
+              打开目录
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tab 切换 */}
@@ -426,168 +445,32 @@ function TerminalTab({
   agentIcon: string
   agentId: string
 }) {
-  const [input, setInput] = useState('')
-  const [history, setHistory] = useState<Array<{ type: 'input' | 'output' | 'error'; text: string }>>([
-    { type: 'output', text: `${agentIcon} ${agentName} 终端已就绪` },
-    { type: 'output', text: '输入命令开始调用，例如: "分析项目结构" 或 "帮我写一个函数"' },
-    { type: 'output', text: '---' },
-  ])
-  const [isRunning, setIsRunning] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const [launching, setLaunching] = useState(false)
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [history])
-
-  const handleSend = () => {
-    if (!input.trim() || isRunning) return
-
-    const cmd = input.trim()
-    setInput('')
-    setHistory((prev) => [...prev, { type: 'input', text: `> ${cmd}` }])
-    setIsRunning(true)
-
-    // 模拟 Agent 响应
-    setTimeout(() => {
-      const responses: Record<string, string> = {
-        '分析项目结构': `正在分析项目结构...
-
-📁 Agent Control Center
-├── electron/           # Electron 主进程
-│   ├── main.ts         # 主进程入口
-│   ├── preload.ts      # 预加载脚本
-│   └── scanner/        # Agent 扫描器
-├── src/renderer/       # React 前端
-│   ├── components/     # UI 组件
-│   ├── pages/          # 页面
-│   └── lib/            # 工具库
-├── package.json
-└── tailwind.config.ts
-
-分析完成！项目包含 10 个 Agent 管理模块。`,
-
-        '帮我写一个函数': `好的，我来帮你写一个函数：
-
-\`\`\`typescript
-// 递归计算目录大小
-function getDirSize(dirPath: string): number {
-  const files = fs.readdirSync(dirPath);
-  let size = 0;
-  for (const file of files) {
-    const fullPath = path.join(dirPath, file);
-    const stat = fs.statSync(fullPath);
-    if (stat.isDirectory()) {
-      size += getDirSize(fullPath);
-    } else {
-      size += stat.size;
-    }
-  }
-  return size;
-}
-\`\`\`
-
-这个函数可以递归计算目录的总大小。`,
-
-        '优化建议': `基于当前项目分析，优化建议：
-
-1. **性能优化**
-   - 添加 Agent 状态缓存，减少重复扫描
-   - 使用 Web Worker 处理耗时计算
-
-2. **用户体验**
-   - 添加加载动画
-   - 支持拖拽排序 Agent
-
-3. **代码质量**
-   - 添加单元测试
-   - 使用 ESLint + Prettier`,
-
-        default: `收到命令: "${cmd}"
-
-${agentName} 正在处理中...
-
-处理完成！
-- 状态: 成功
-- 耗时: 1.2s
-- 输出: 已完成请求的操作`,
+  const handleLaunch = async () => {
+    if (window.electronAPI?.launchAgent) {
+      setLaunching(true)
+      const result = await window.electronAPI.launchAgent(agentId)
+      setLaunching(false)
+      if (result.success) {
+        alert(`已启动 ${agentName}`)
+      } else {
+        alert(`启动失败: ${result.error}`)
       }
-
-      const response = responses[cmd] || responses['default']
-      setHistory((prev) => [...prev, { type: 'output', text: response }])
-      setIsRunning(false)
-    }, 1500)
+    }
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* 终端标题 */}
-      <div className="border-b border-border p-3 flex items-center gap-2">
-        <Terminal className="h-4 w-4 text-green-400" />
-        <span className="text-sm font-medium">{agentName} 终端</span>
-        <Badge variant={isRunning ? 'info' : 'success'} className="ml-2">
-          {isRunning ? '运行中' : '就绪'}
-        </Badge>
-      </div>
-
-      {/* 终端输出 */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 font-mono text-sm bg-black/20"
-      >
-        {history.map((item, i) => (
-          <div
-            key={i}
-            className={`mb-2 ${
-              item.type === 'input'
-                ? 'text-blue-400'
-                : item.type === 'error'
-                ? 'text-red-400'
-                : 'text-green-300'
-            }`}
-          >
-            <pre className="whitespace-pre-wrap">{item.text}</pre>
-          </div>
-        ))}
-        {isRunning && (
-          <div className="text-yellow-400 animate-pulse">
-            正在处理...
-          </div>
-        )}
-      </div>
-
-      {/* 输入框 */}
-      <div className="border-t border-border p-4">
-        <div className="flex items-center gap-3">
-          <span className="text-green-400 font-mono">$</span>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="输入命令或问题..."
-            className="flex-1 h-10 px-3 rounded-lg bg-secondary border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSend()
-            }}
-            disabled={isRunning}
-          />
-          <Button onClick={handleSend} disabled={isRunning || !input.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-          <span>试试:</span>
-          {['分析项目结构', '帮我写一个函数', '优化建议'].map((cmd) => (
-            <button
-              key={cmd}
-              onClick={() => setInput(cmd)}
-              className="px-2 py-1 rounded bg-secondary hover:bg-secondary/80 transition-colors"
-            >
-              {cmd}
-            </button>
-          ))}
-        </div>
+    <div className="h-full flex flex-col items-center justify-center p-8">
+      <div className="text-center max-w-md">
+        <span className="text-6xl mb-6 block">{agentIcon}</span>
+        <h2 className="text-2xl font-bold mb-2">调用 {agentName}</h2>
+        <p className="text-muted-foreground mb-8">
+          点击按钮启动 {agentName}
+        </p>
+        <Button onClick={handleLaunch} disabled={launching} size="lg" className="px-8">
+          {launching ? '启动中...' : `启动 ${agentName}`}
+        </Button>
       </div>
     </div>
   )

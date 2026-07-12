@@ -10,6 +10,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Agent scanner
   scanAgents: () => ipcRenderer.invoke('scan-agents'),
 
+  // Chat history scanner
+  scanChatHistory: () => ipcRenderer.invoke('scan-chat-history'),
+
+  // Launch agent
+  launchAgent: (agentId: string) => ipcRenderer.invoke('launch-agent', agentId),
+
   // Open external path
   openPath: (fullPath: string) => ipcRenderer.invoke('open-path', fullPath),
 })
@@ -20,5 +26,7 @@ export type ElectronAPI = {
   close: () => void
   isMaximized: () => Promise<boolean>
   scanAgents: () => Promise<any[]>
+  scanChatHistory: () => Promise<any[]>
+  launchAgent: (agentId: string) => Promise<{ success: boolean; message?: string; error?: string }>
   openPath: (fullPath: string) => Promise<void>
 }

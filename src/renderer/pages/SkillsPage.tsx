@@ -159,28 +159,53 @@ function SkillsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredSkills.map((skill) => {
           const displayName = translateSkillName(skill.name)
-          const displayDesc = translateSkillDescription(skill.description)
+          const displayDesc = translateSkillDescription(skill.name, skill.description)
           return (
-            <Card key={skill.id} className="hover:border-blue-500/50 transition-colors group">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{agentNames[skill.agentId]?.icon}</span>
-                    <CardTitle className="text-base">{displayName}</CardTitle>
+            <div key={skill.id} className="relative group/skill">
+              <Card className="hover:border-blue-500/50 transition-colors h-full">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{agentNames[skill.agentId]?.icon}</span>
+                      <CardTitle className="text-base">{displayName}</CardTitle>
+                    </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">{agentNames[skill.agentId]?.name}</p>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-3 leading-relaxed line-clamp-2">
+                    {displayDesc}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {skill.category && <Badge variant="info">{skill.category}</Badge>}
+                    <Badge variant="secondary">真实</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 悬停提示框 */}
+              <div className="absolute z-50 left-0 right-0 top-full mt-2 opacity-0 invisible group-hover/skill:opacity-100 group-hover/skill:visible transition-all duration-200 pointer-events-none">
+                <div className="bg-card border border-border rounded-xl shadow-2xl p-4 max-w-sm">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                    <span className="text-xl">{agentNames[skill.agentId]?.icon}</span>
+                    <div>
+                      <p className="font-medium text-sm">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">{agentNames[skill.agentId]?.name}</p>
+                    </div>
+                  </div>
+                  <div className="bg-blue-500/10 rounded-lg p-3 mb-2">
+                    <p className="text-xs text-blue-400 mb-1 font-medium">中文说明</p>
+                    <p className="text-sm text-foreground leading-relaxed">{displayDesc}</p>
+                  </div>
+                  {skill.description && skill.description !== displayDesc && (
+                    <div className="bg-secondary rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground mb-1 font-medium">英文原文</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{skill.description}</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">{agentNames[skill.agentId]?.name}</p>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                  {displayDesc}
-                </p>
-                <div className="flex items-center gap-2">
-                  {skill.category && <Badge variant="info">{skill.category}</Badge>}
-                  <Badge variant="secondary">真实</Badge>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )
         })}
       </div>

@@ -33,18 +33,6 @@ const statusConfig: Record<string, { label: string; variant: 'success' | 'warnin
   offline: { label: '未安装', variant: 'secondary' },
 }
 
-// 模拟聊天记录
-const mockChats: Record<string, Array<{ id: string; role: string; content: string; time: string }>> = {
-  mimocode: [
-    { id: '1', role: 'user', content: '帮我优化一下登录系统', time: '2小时前' },
-    { id: '2', role: 'assistant', content: '好的，我来分析一下当前的登录系统...\n\n建议：\n1. 添加 JWT token 刷新机制\n2. 使用 bcrypt 加密密码\n3. 添加登录失败限制', time: '2小时前' },
-  ],
-  claude: [
-    { id: '1', role: 'user', content: '分析这个项目的架构', time: '1天前' },
-    { id: '2', role: 'assistant', content: '项目采用 React + Electron 架构，主要分为：\n1. 主进程 (electron/main.ts)\n2. 渲染进程 (src/renderer/)\n3. 数据层 (lib/db/)', time: '1天前' },
-  ],
-}
-
 function formatSize(mb: number): string {
   if (mb === 0) return '0 MB'
   if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`
@@ -91,7 +79,6 @@ function AgentDetailPage() {
   }
 
   const info = agentMap[agentId || ''] || { name: agentId, icon: '❓', description: '' }
-  const chats = mockChats[agentId || ''] || []
 
   const handleOpenPath = (path: string | null) => {
     if (path && window.electronAPI?.openPath) {
@@ -237,10 +224,10 @@ function AgentDetailPage() {
           />
         )}
         {activeTab === 'chat' && (
-          <ChatTab chats={chats} agentName={info.name} agentIcon={info.icon} />
+          <ChatTab agentId={agentId || ''} agentName={info.name} agentIcon={info.icon} />
         )}
         {activeTab === 'terminal' && (
-          <TerminalTab agentName={info.name} agentIcon={info.icon} agentId={agentId || ''} />
+          <TerminalTab agentName={info.name} agentIcon={info.icon} agentId={agentId || ''} agentType={agentInfo?.type} />
         )}
       </div>
 
@@ -336,100 +323,97 @@ function SkillsTab({
 
 // ========== 聊天记录 Tab ==========
 function ChatTab({
-  chats,
+  agentId,
   agentName,
   agentIcon,
 }: {
-  chats: Array<{ id: string; role: string; content: string; time: string }>
+  agentId: string
   agentName: string
   agentIcon: string
 }) {
-  const [selectedChat, setSelectedChat] = useState<string | null>(null)
-  const [inputValue, setInputValue] = useState('')
+  const [conversations, setConversations] = useState<any[]>([])
+  const [selectedConv, setSelectedConv] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // 模拟多轮对话
-  const mockConversation = [
-    { id: '1', role: 'user', content: '你好，帮我看看这个项目' },
-    { id: '2', role: 'assistant', content: `好的，我是 ${agentName}，很高兴为你服务！\n\n请告诉我你需要什么帮助？` },
-    { id: '3', role: 'user', content: '分析一下项目结构' },
-    { id: '4', role: 'assistant', content: '项目结构分析：\n\n📁 agent-control-center/\n├── electron/          # Electron 主进程\n├── src/renderer/      # React 前端\n├── package.json       # 依赖配置\n└── tailwind.config.ts # 样式配置\n\n这是一个 Electron + React + TypeScript 的桌面应用项目。' },
-  ]
+  useEffect(() => {
+    loadChatHistory()
+  }, [agentId])
+
+  async function loadChatHistory() {
+    if (window.electronAPI?.scanChatHistory) {
+      const allHistory = await window.electronAPI.scanChatHistory()
+      // 只显示当前 Agent 的聊天记录
+      const agentHistory = allHistory.filter((c: any) => c.agentId === agentId)
+      setConversations(agentHistory)
+    }
+    setLoading(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">加载聊天记录...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex">
       {/* 左侧对话列表 */}
       <div className="w-64 border-r border-border p-4 space-y-2">
         <h3 className="text-sm font-medium text-muted-foreground mb-3">对话历史</h3>
-        <button
-          onClick={() => setSelectedChat('new')}
-          className="w-full text-left p-3 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 transition-colors text-sm"
-        >
-          + 新建对话
-        </button>
-        {chats.length > 0 ? (
-          chats.map((chat) => (
+        {conversations.length > 0 ? (
+          conversations.map((conv) => (
             <button
-              key={chat.id}
-              onClick={() => setSelectedChat(chat.id)}
+              key={conv.id}
+              onClick={() => setSelectedConv(conv)}
               className={`w-full text-left p-3 rounded-lg transition-colors ${
-                selectedChat === chat.id
+                selectedConv?.id === conv.id
                   ? 'bg-accent text-accent-foreground'
                   : 'hover:bg-accent/50'
               }`}
             >
-              <p className="text-sm truncate">{chat.content}</p>
-              <p className="text-xs text-muted-foreground mt-1">{chat.time}</p>
+              <p className="text-sm truncate font-medium">{conv.title}</p>
+              <p className="text-xs text-muted-foreground mt-1">{conv.time} · {conv.messageCount} 条</p>
             </button>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">暂无对话</p>
+          <p className="text-sm text-muted-foreground text-center py-4">暂无对话记录</p>
         )}
       </div>
 
       {/* 右侧聊天区域 */}
       <div className="flex-1 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {mockConversation.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`flex items-start gap-2 max-w-[70%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <span className="text-xl flex-shrink-0">{msg.role === 'user' ? '👤' : agentIcon}</span>
+        {selectedConv ? (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {(selectedConv.messages || []).map((msg: any) => (
                 <div
-                  className={`rounded-xl px-4 py-3 ${
-                    msg.role === 'user'
-                      ? 'bg-blue-500/20 text-foreground'
-                      : 'bg-secondary text-foreground'
-                  }`}
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <div className={`flex items-start gap-2 max-w-[70%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <span className="text-xl flex-shrink-0">{msg.role === 'user' ? '👤' : agentIcon}</span>
+                    <div
+                      className={`rounded-xl px-4 py-3 ${
+                        msg.role === 'user'
+                          ? 'bg-blue-500/20 text-foreground'
+                          : 'bg-secondary text-foreground'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{msg.time}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* 输入框 */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={`向 ${agentName} 发送消息...`}
-              className="flex-1 h-10 px-4 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && inputValue.trim()) {
-                  setInputValue('')
-                }
-              }}
-            />
-            <Button>
-              <Send className="h-4 w-4" />
-            </Button>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-muted-foreground">选择一个对话查看记录</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -440,10 +424,12 @@ function TerminalTab({
   agentName,
   agentIcon,
   agentId,
+  agentType,
 }: {
   agentName: string
   agentIcon: string
   agentId: string
+  agentType?: string
 }) {
   const [launching, setLaunching] = useState(false)
 
@@ -453,25 +439,38 @@ function TerminalTab({
       const result = await window.electronAPI.launchAgent(agentId)
       setLaunching(false)
       if (result.success) {
-        alert(`已启动 ${agentName}`)
+        // 不弹窗，直接打开
       } else {
         alert(`启动失败: ${result.error}`)
       }
     }
   }
 
+  const typeLabel = agentType === 'cli' ? '命令行工具' : '桌面应用'
+
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        <span className="text-6xl mb-6 block">{agentIcon}</span>
-        <h2 className="text-2xl font-bold mb-2">调用 {agentName}</h2>
-        <p className="text-muted-foreground mb-8">
-          点击按钮启动 {agentName}
-        </p>
-        <Button onClick={handleLaunch} disabled={launching} size="lg" className="px-8">
-          {launching ? '启动中...' : `启动 ${agentName}`}
-        </Button>
-      </div>
+      <span className="text-6xl mb-6 block">{agentIcon}</span>
+      <h2 className="text-2xl font-bold mb-2">{agentName}</h2>
+      <p className="text-muted-foreground mb-2">{typeLabel}</p>
+      <p className="text-sm text-muted-foreground mb-8">
+        {agentType === 'cli'
+          ? '点击打开终端并运行'
+          : '点击启动应用'}
+      </p>
+      <Button onClick={handleLaunch} disabled={launching} size="lg" className="px-8">
+        {launching ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            启动中...
+          </>
+        ) : (
+          <>
+            <Play className="h-5 w-5 mr-2" />
+            启动 {agentName}
+          </>
+        )}
+      </Button>
     </div>
   )
 }

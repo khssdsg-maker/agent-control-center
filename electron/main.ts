@@ -89,13 +89,13 @@ ipcMain.handle('launch-agent', (_event, agentId: string) => {
   }
 
   try {
-    // CLI 类型在新的终端窗口中启动
     if (agent.type === 'cli') {
-      const cmd = `start cmd /k ${agent.launchCommand}`
-      exec(cmd)
+      // CLI 类型：打开真实 cmd.exe 窗口，自动运行命令
+      const cmd = `start " ${agent.name}" cmd /k "${agent.launchCommand}"`
+      exec(cmd, { cwd: 'C:\\Users\\海辰\\Desktop' })
     } else {
-      // 桌面类型直接启动
-      exec(agent.launchCommand)
+      // 桌面类型：直接启动 exe
+      exec(`start "" ${agent.launchCommand}`)
     }
     return { success: true, message: `已启动 ${agent.name}` }
   } catch (err: any) {
@@ -107,3 +107,5 @@ ipcMain.handle('launch-agent', (_event, agentId: string) => {
 ipcMain.handle('open-path', (_event, fullPath: string) => {
   shell.openPath(fullPath)
 })
+
+

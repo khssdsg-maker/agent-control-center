@@ -88,7 +88,26 @@ function Dashboard() {
   const runningCount = agents.filter((a: any) => a.status === 'running').length
 
   if (loading) {
-    return <div className="p-6 flex items-center justify-center h-full"><p className="text-muted-foreground">{t('app.loading')}</p></div>
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-8 w-48 bg-secondary rounded animate-pulse" />
+            <div className="h-4 w-32 bg-secondary rounded animate-pulse mt-2" />
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 bg-secondary rounded-lg animate-pulse" />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="h-40 bg-secondary rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (

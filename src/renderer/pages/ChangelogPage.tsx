@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.8.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '错误边界：组件出错时显示友好错误提示' },
+      { type: 'improve', text: 'Dashboard 添加骨架屏加载动画' },
+      { type: 'improve', text: '优化页面加载性能' },
+    ],
+  },
+  {
     version: '1.7.0',
     date: '2026-07-12',
     changes: [

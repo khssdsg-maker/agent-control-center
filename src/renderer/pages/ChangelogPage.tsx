@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.9.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: 'Agent 详情页：显示详细介绍、功能特性、系统要求' },
+      { type: 'feature', text: '安装方法：显示安装命令，支持复制和搜索教程' },
+      { type: 'feature', text: '访问官网按钮：一键跳转到 Agent 官网' },
+    ],
+  },
+  {
     version: '1.8.0',
     date: '2026-07-12',
     changes: [

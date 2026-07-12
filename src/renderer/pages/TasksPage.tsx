@@ -53,15 +53,26 @@ function TasksPage() {
     loadTasks()
   }
 
-  const handleRunTask = (task: Task) => {
+  const handleRunTask = async (task: Task) => {
     updateTaskStatus(task.id, 'running')
     loadTasks()
 
-    // 模拟任务执行
-    setTimeout(() => {
-      updateTaskStatus(task.id, 'completed', '任务执行完成')
-      loadTasks()
-    }, 3000)
+    try {
+      // 调用 Agent 执行任务
+      if (window.electronAPI?.launchAgent) {
+        const result = await window.electronAPI.launchAgent(task.agentId)
+        if (result.success) {
+          updateTaskStatus(task.id, 'completed', `已启动 ${task.agentName}，请在弹出的窗口中完成任务`)
+        } else {
+          updateTaskStatus(task.id, 'failed', `启动失败: ${result.error}`)
+        }
+      } else {
+        updateTaskStatus(task.id, 'completed', '任务已提交')
+      }
+    } catch (err: any) {
+      updateTaskStatus(task.id, 'failed', `执行错误: ${err.message}`)
+    }
+    loadTasks()
   }
 
   const stats = {

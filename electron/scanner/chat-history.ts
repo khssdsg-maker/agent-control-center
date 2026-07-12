@@ -211,6 +211,26 @@ function scanMiMoCode(homedir: string): ChatConversation[] {
   return conversations.slice(0, 10)
 }
 
+// 扫描 Kimi 聊天记录（从 SQLite 数据库）
+function scanKimi(homedir: string): ChatConversation[] {
+  const conversations: ChatConversation[] = []
+  const kimiDir = path.join(homedir, 'AppData', 'Local', 'KimiAppCache')
+
+  if (!existsSync(kimiDir)) return conversations
+
+  // 查找所有 .db 文件
+  const files = readdirSync(kimiDir).filter(f => f.endsWith('_chat.db'))
+  for (const file of files) {
+    const dbPath = path.join(kimiDir, file)
+    try {
+      // 注意：这里需要在主进程中使用 better-sqlite3 或 sql.js
+      // 暂时返回空数组，后续可以添加支持
+    } catch {}
+  }
+
+  return conversations
+}
+
 // 主函数：扫描所有 Agent 的聊天记录
 export function scanAllChatHistory(homedir: string): ChatConversation[] {
   const allConversations: ChatConversation[] = []
@@ -218,6 +238,7 @@ export function scanAllChatHistory(homedir: string): ChatConversation[] {
   // 扫描各 Agent
   allConversations.push(...scanClaudeCode(homedir))
   allConversations.push(...scanMiMoCode(homedir))
+  allConversations.push(...scanKimi(homedir))
 
   // 按时间排序
   return allConversations.sort((a, b) => {

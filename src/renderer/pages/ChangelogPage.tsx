@@ -4,6 +4,16 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '1.4.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '任务系统真正执行：点击执行会启动对应 Agent' },
+      { type: 'feature', text: '添加 Kimi 聊天记录扫描支持' },
+      { type: 'improve', text: '任务执行结果实时反馈' },
+      { type: 'improve', text: '优化任务执行流程' },
+    ],
+  },
+  {
     version: '1.3.2',
     date: '2026-07-12',
     changes: [

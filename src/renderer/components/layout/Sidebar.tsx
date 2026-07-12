@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, MessageSquare, Wrench, ListTodo, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Wrench, ListTodo, Settings, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const statusColors: Record<string, string> = {
@@ -72,6 +72,7 @@ function Sidebar() {
         <NavItem to="/skills" icon={Wrench} label="技能管理" active={location.pathname === '/skills'} />
         <NavItem to="/chat" icon={MessageSquare} label="聊天记录" active={location.pathname === '/chat'} />
         <NavItem to="/tasks" icon={ListTodo} label="任务中心" active={location.pathname === '/tasks'} />
+        <NavItem to="/settings" icon={Settings} label="设置" active={location.pathname === '/settings'} />
       </div>
     </aside>
   )

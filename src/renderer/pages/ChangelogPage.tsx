@@ -4,6 +4,17 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.0.0',
+    date: '2026-07-12',
+    changes: [
+      { type: 'feature', text: '多主题支持：7种主题颜色（深色、浅色、深蓝、深绿、深紫、暗红、暗橙）' },
+      { type: 'feature', text: '自定义壁纸：支持上传图片作为背景' },
+      { type: 'feature', text: '多语言支持：8种语言（中、英、日、韩、法、德、西、俄）' },
+      { type: 'fix', text: '修复语言切换功能' },
+      { type: 'fix', text: '修复图标提取导致的黑屏问题' },
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-07-12',
     changes: [

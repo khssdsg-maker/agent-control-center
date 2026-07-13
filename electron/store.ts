@@ -10,6 +10,7 @@ interface StoreData {
   skillsCache: any[]
   tasks: any[]
   customAgents: any[]
+  windowBounds: { x?: number; y?: number; width: number; height: number }
 }
 
 const defaultData: StoreData = {
@@ -90,5 +91,16 @@ export function getCustomAgents() {
 export function saveCustomAgents(agents: any[]) {
   const data = loadStore()
   data.customAgents = agents
+  saveStore(data)
+}
+
+export function getWindowBounds() {
+  const data = loadStore()
+  return data.windowBounds || { x: undefined, y: undefined, width: 1400, height: 900 }
+}
+
+export function saveWindowBounds(bounds: { x?: number; y?: number; width: number; height: number }) {
+  const data = loadStore()
+  data.windowBounds = bounds
   saveStore(data)
 }

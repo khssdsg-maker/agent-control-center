@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('window-close'),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
+  // Shortcut listeners
+  onShortcutSearch: (callback: () => void) => ipcRenderer.on('shortcut-search', callback),
+  onShortcutEscape: (callback: () => void) => ipcRenderer.on('shortcut-escape', callback),
+
   // Agent scanner
   scanAgents: () => ipcRenderer.invoke('scan-agents'),
 
@@ -53,6 +57,8 @@ export type ElectronAPI = {
   maximize: () => void
   close: () => void
   isMaximized: () => Promise<boolean>
+  onShortcutSearch: (callback: () => void) => void
+  onShortcutEscape: (callback: () => void) => void
   scanAgents: () => Promise<any[]>
   extractIcon: (exePath: string) => Promise<string | null>
   checkProcess: (processName: string) => Promise<boolean>

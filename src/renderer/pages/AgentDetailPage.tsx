@@ -108,13 +108,28 @@ function ChatTab({ agentId, agentName, agentIcon }: { agentId: string; agentName
   const [chats, setChats] = useState<any[]>([])
   const [sel, setSel] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<'time' | 'count'>('time')
+
   useEffect(() => { (async () => { if (window.electronAPI?.scanChatHistory) { const all = await window.electronAPI.scanChatHistory(); setChats(all.filter((c: any) => c.agentId === agentId)) } setLoading(false) })() }, [agentId])
+
+  const filteredChats = chats
+    .filter(c => !searchQuery || c.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => sortBy === 'count' ? (b.messageCount || 0) - (a.messageCount || 0) : 0)
+
   if (loading) return <div className="p-6 text-center text-muted-foreground">加载中...</div>
   if (!chats.length) return <div className="p-6 text-center text-muted-foreground"><MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" /><p>暂无聊天记录</p><p className="text-sm mt-1">使用 {agentName} 后对话记录会自动显示</p></div>
+
   return (
     <div className="flex h-full">
-      <div className="w-64 border-r border-border p-3 space-y-1 overflow-y-auto">
-        {chats.map((c) => (<button key={c.id} onClick={() => setSel(c)} className={`w-full text-left p-3 rounded-lg text-sm ${sel?.id === c.id ? 'bg-accent' : 'hover:bg-accent/50'}`}><p className="font-medium truncate">{c.title}</p><p className="text-xs text-muted-foreground mt-1">{c.time} · {c.messageCount}条</p></button>))}
+      <div className="w-72 border-r border-border flex flex-col">
+        <div className="p-3 border-b border-border space-y-2">
+          <div className="relative"><Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input type="text" placeholder="搜索对话..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full h-8 pl-8 pr-3 rounded bg-secondary border border-border text-sm focus:outline-none" /></div>
+          <div className="flex gap-2"><button onClick={() => setSortBy('time')} className={`px-2 py-1 rounded text-xs ${sortBy === 'time' ? 'bg-blue-500/20 text-blue-400' : 'bg-secondary'}`}>按时间</button><button onClick={() => setSortBy('count')} className={`px-2 py-1 rounded text-xs ${sortBy === 'count' ? 'bg-blue-500/20 text-blue-400' : 'bg-secondary'}`}>按消息数</button></div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {filteredChats.map(c => (<button key={c.id} onClick={() => setSel(c)} className={`w-full text-left p-3 rounded-lg text-sm ${sel?.id === c.id ? 'bg-accent' : 'hover:bg-accent/50'}`}><p className="font-medium truncate">{c.title}</p><p className="text-xs text-muted-foreground mt-1">{c.time} · {c.messageCount}条</p></button>))}
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {sel ? sel.messages?.map((m: any, i: number) => (<div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] rounded-xl px-4 py-3 ${m.role === 'user' ? 'bg-blue-500/20' : 'bg-secondary'}`}><p className="text-sm whitespace-pre-wrap">{m.content}</p><p className="text-xs text-muted-foreground mt-1">{m.time}</p></div></div>)) : <div className="text-center text-muted-foreground py-12">选择一个对话查看</div>}

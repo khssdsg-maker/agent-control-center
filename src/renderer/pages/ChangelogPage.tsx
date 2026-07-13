@@ -4,6 +4,16 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.3.0',
+    date: '2026-07-13',
+    changes: [
+      { type: 'feature', text: '聊天记录搜索：在对话列表中搜索关键词' },
+      { type: 'feature', text: '聊天记录排序：按时间或消息数量排序' },
+      { type: 'feature', text: 'Agent 状态真实检测：显示进程是否运行 + 内存使用量' },
+      { type: 'feature', text: '任务模板：预置常用任务模板' },
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-07-13',
     changes: [

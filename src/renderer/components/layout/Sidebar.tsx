@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, MessageSquare, Wrench, ListTodo, Settings, ChevronRight, FileText, GitBranch, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { t, useLanguage } from '@/lib/i18n'
+import { useTabStore } from '@/stores/tabStore'
 
 const statusColors: Record<string, string> = {
   online: 'bg-status-online',
@@ -13,57 +14,51 @@ const statusColors: Record<string, string> = {
 }
 
 const statusLabels: Record<string, string> = {
-  online: '在线',
-  idle: '空闲',
-  running: '运行中',
-  error: '错误',
-  offline: '未安装',
+  online: '在线', idle: '空闲', running: '运行中', error: '错误', offline: '未安装',
+}
+
+const navIcons: Record<string, string> = {
+  '/': '📊', '/skills': '🔧', '/chat': '💬', '/tasks': '📋',
+  '/workflow': '🔀', '/analytics': '📈', '/changelog': '📝', '/settings': '⚙️',
+}
+
+const agentIcons: Record<string, string> = {
+  mimocode: '🤖', claude: '🧠', codex: '⚡', coffee: '☕',
+  doubao: '🫘', kimi: '🌙', qianwen: '🔮', yuanbao: '💎',
+  claw: '🦞', antigravity: '🌌',
 }
 
 function Sidebar() {
   const [agents, setAgents] = useState<any[]>([])
-  const [icons, setIcons] = useState<Record<string, string>>({})
   const location = useLocation()
   const navigate = useNavigate()
-  const lang = useLanguage() // 订阅语言变更
+  const lang = useLanguage()
+  const { addTab } = useTabStore()
 
   useEffect(() => {
     loadAgents()
   }, [])
 
   async function loadAgents() {
-    // 先从缓存加载
     const cached = localStorage.getItem('agent-scan-cache')
     if (cached) {
-      const data = JSON.parse(cached)
-      setAgents(data)
-      loadIcons(data)
-    } else {
-      // 重新扫描
-      if (window.electronAPI?.scanAgents) {
-        const detected = await window.electronAPI.scanAgents()
-        setAgents(detected)
-        localStorage.setItem('agent-scan-cache', JSON.stringify(detected))
-        loadIcons(detected)
-      }
+      setAgents(JSON.parse(cached))
+    } else if (window.electronAPI?.scanAgents) {
+      const detected = await window.electronAPI.scanAgents()
+      setAgents(detected)
+      localStorage.setItem('agent-scan-cache', JSON.stringify(detected))
     }
   }
 
-  async function loadIcons(agentList: any[]) {
-    for (const agent of agentList) {
-      if (agent.iconPath && !icons[agent.id]) {
-        if (window.electronAPI?.extractIcon) {
-          const iconPath = await window.electronAPI.extractIcon(agent.iconPath)
-          if (iconPath) {
-            setIcons((prev) => ({ ...prev, [agent.id]: iconPath }))
-          }
-        }
-      }
-    }
-  }
-
-  const handleAgentClick = (agentId: string) => {
-    navigate(`/agent/${agentId}`)
+  const handleAgentClick = (agent: any) => {
+    const tabId = `agent-${agent.id}`
+    addTab({
+      id: tabId,
+      title: agent.name,
+      path: `/agent/${agent.id}`,
+      icon: agentIcons[agent.id] || '🤖',
+    })
+    navigate(`/agent/${agent.id}`)
   }
 
   return (
@@ -74,38 +69,24 @@ function Sidebar() {
         </h2>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2">
+      <nav className="flex-1 overflow-y-auto p-2 space-y-1">
         {agents.map((agent) => (
           <button
             key={agent.id}
-            onClick={() => handleAgentClick(agent.id)}
+            onClick={() => handleAgentClick(agent)}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors group',
-              'hover:bg-accent hover:text-accent-foreground',
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group',
+              'hover:bg-accent hover:text-accent-foreground hover:translate-x-1',
               location.pathname === `/agent/${agent.id}` && 'bg-accent text-accent-foreground'
             )}
           >
             <div className="relative flex-shrink-0">
-              {/* 使用真实图标 */}
-              {icons[agent.id] ? (
-                <img
-                  src={icons[agent.id]}
-                  alt={agent.name}
-                  className="w-6 h-6 rounded"
-                  onError={(e) => {
-                    // 图标加载失败，显示 emoji
-                    ;(e.target as HTMLImageElement).style.display = 'none'
-                  }}
-                />
-              ) : (
-                <span className="text-lg">{agent.icon}</span>
-              )}
+              <span className="text-lg">{agentIcons[agent.id] || '🤖'}</span>
               <span
                 className={cn(
                   'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card',
                   statusColors[agent.status] || 'bg-status-offline'
                 )}
-                title={statusLabels[agent.status] || agent.status}
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -120,33 +101,33 @@ function Sidebar() {
       </nav>
 
       <div className="border-t border-border p-2">
-        <NavItem to="/" icon={LayoutDashboard} label={t('nav.dashboard')} active={location.pathname === '/'} />
-        <NavItem to="/skills" icon={Wrench} label={t('nav.skills')} active={location.pathname === '/skills'} />
-        <NavItem to="/chat" icon={MessageSquare} label={t('nav.chat')} active={location.pathname === '/chat'} />
-        <NavItem to="/tasks" icon={ListTodo} label={t('nav.tasks')} active={location.pathname === '/tasks'} />
-        <NavItem to="/workflow" icon={GitBranch} label="工作流" active={location.pathname === '/workflow'} />
-        <NavItem to="/analytics" icon={BarChart3} label="数据分析" active={location.pathname === '/analytics'} />
-        <NavItem to="/changelog" icon={FileText} label={t('nav.changelog')} active={location.pathname === '/changelog'} />
-        <NavItem to="/settings" icon={Settings} label={t('nav.settings')} active={location.pathname === '/settings'} />
+        {[
+          { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
+          { to: '/skills', icon: Wrench, label: t('nav.skills') },
+          { to: '/chat', icon: MessageSquare, label: t('nav.chat') },
+          { to: '/tasks', icon: ListTodo, label: t('nav.tasks') },
+          { to: '/workflow', icon: GitBranch, label: '工作流' },
+          { to: '/analytics', icon: BarChart3, label: '数据分析' },
+          { to: '/changelog', icon: FileText, label: t('nav.changelog') },
+          { to: '/settings', icon: Settings, label: t('nav.settings') },
+        ].map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={() => addTab({ id: item.to, title: item.label, path: item.to, icon: navIcons[item.to] })}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+              location.pathname === item.to
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+            <span className="text-sm">{item.label}</span>
+          </Link>
+        ))}
       </div>
     </aside>
-  )
-}
-
-function NavItem({ to, icon: Icon, label, active }: { to: string; icon: any; label: string; active: boolean }) {
-  return (
-    <Link
-      to={to}
-      className={cn(
-        'flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
-        active
-          ? 'bg-accent text-accent-foreground'
-          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-      )}
-    >
-      <Icon className="h-5 w-5" />
-      <span className="text-sm">{label}</span>
-    </Link>
   )
 }
 

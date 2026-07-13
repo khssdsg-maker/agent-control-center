@@ -58,28 +58,22 @@ function AgentDetailPage() {
   const [showSkillEditor, setShowSkillEditor] = useState(false)
 
   useEffect(() => {
-    initDatabase()
-    loadSkills()
-    loadAgentInfo()
+    // 延迟加载，避免阻塞
+    setTimeout(() => {
+      loadSkills()
+      loadAgentInfo()
+    }, 100)
   }, [agentId])
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (agentInfo?.status !== 'offline') {
-        const m = simulateAgentMetrics()
-        setMetrics({ cpu: m.cpu, mem: m.mem })
-      }
-    }, 2000)
-    return () => clearInterval(timer)
-  }, [agentInfo?.status])
 
   function loadSkills() {
     if (agentId) setSkills(getSkillsByAgent(agentId))
   }
 
   async function loadAgentInfo() {
-    if (window.electronAPI?.scanAgents && agentId) {
-      const agents = await window.electronAPI.scanAgents()
+    // 使用缓存数据，不重新扫描
+    const cached = localStorage.getItem('agent-scan-cache')
+    if (cached) {
+      const agents = JSON.parse(cached)
       setAgentInfo(agents.find((a: any) => a.id === agentId))
     }
   }

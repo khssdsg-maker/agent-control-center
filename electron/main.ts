@@ -69,12 +69,15 @@ ipcMain.handle('scan-agents', async () => {
 // ========== Extract Icon ==========
 ipcMain.handle('extract-icon', (_event, exePath: string) => {
   try {
+    // 尝试从 exe 提取图标
     const icon = nativeImage.createFromPath(exePath)
     if (icon && !icon.isEmpty()) {
       const resized = icon.resize({ width: 64, height: 64 })
       return resized.toDataURL()
     }
-  } catch {}
+  } catch (err) {
+    console.log('图标提取失败:', exePath, err)
+  }
   return null
 })
 

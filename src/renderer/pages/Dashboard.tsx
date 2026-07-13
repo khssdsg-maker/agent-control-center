@@ -138,50 +138,24 @@ function Dashboard() {
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.agents')}</p>
-                <p className="text-3xl font-bold">{agents.length}</p>
+        {[
+          { label: t('dashboard.agents'), value: agents.length, icon: Bot, color: 'blue' },
+          { label: t('dashboard.installed'), value: onlineCount, icon: Activity, color: 'green' },
+          { label: t('dashboard.running'), value: runningCount, icon: Zap, color: 'orange' },
+          { label: t('dashboard.cpu'), value: `${systemCpu}%`, icon: Cpu, color: 'purple' },
+        ].map((stat) => (
+          <Card key={stat.label} className={`hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-gradient-to-br from-${stat.color}-500/10 to-${stat.color}-500/5 border-${stat.color}-500/20`}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="text-3xl font-bold">{stat.value}</p>
+                </div>
+                <stat.icon className={`h-8 w-8 text-${stat.color}-400`} />
               </div>
-              <Bot className="h-8 w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.installed')}</p>
-                <p className="text-3xl font-bold">{onlineCount}</p>
-              </div>
-              <Activity className="h-8 w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.running')}</p>
-                <p className="text-3xl font-bold">{runningCount}</p>
-              </div>
-              <Zap className="h-8 w-8 text-orange-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.cpu')}</p>
-                <p className="text-3xl font-bold">{systemCpu}%</p>
-              </div>
-              <Cpu className="h-8 w-8 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Agent 列表 */}
@@ -191,22 +165,21 @@ function Dashboard() {
           {filteredAgents.map((agent: any) => (
             <Card
               key={agent.id}
-              className="hover:border-blue-500/50 hover:shadow-lg transition-all cursor-pointer group"
+              className="hover:border-blue-500/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer group"
               onClick={() => navigate(`/agent/${agent.id}`)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  {/* 图标：自定义 > 真实 > emoji */}
                   {agentIcons[agent.id] ? (
-                    <img src={agentIcons[agent.id]} alt={agent.name} className="w-10 h-10 rounded-lg object-cover" />
+                    <img src={agentIcons[agent.id]} alt={agent.name} className="w-10 h-10 rounded-lg object-cover group-hover:scale-110 transition-transform" />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
                       <span className="text-xl">{agent.icon}</span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium truncate">{agent.name}</h3>
+                      <h3 className="font-medium truncate group-hover:text-blue-400 transition-colors">{agent.name}</h3>
                       <Badge variant={statusConfig[agent.status]?.variant ?? 'secondary'} className="text-xs">
                         {statusConfig[agent.status]?.label ?? agent.status}
                       </Badge>

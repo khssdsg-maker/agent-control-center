@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.0.1',
+    date: '2026-07-12',
+    changes: [
+      { type: 'fix', text: '修复点击 Agent 时卡顿问题' },
+      { type: 'fix', text: '优化页面加载速度' },
+      { type: 'improve', text: 'Agent 详情页使用缓存数据' },
+    ],
+  },
+  {
     version: '2.0.0',
     date: '2026-07-12',
     changes: [

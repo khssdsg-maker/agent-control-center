@@ -13,9 +13,10 @@ export interface DetectedAgent {
   configPath: string | null
   dataPath: string | null
   diskSpace: number
+  memoryUsage: number  // 内存使用量（MB）
   launchCommand: string | null
   chatSessionPath: string | null
-  processName: string | null  // 进程名，用于检测是否运行
+  processName: string | null
 }
 
 function run(cmd: string): string {
@@ -41,6 +42,24 @@ function isProcessRunning(processName: string): boolean {
   } catch { return false }
 }
 
+// 获取进程内存使用量（MB）
+function getProcessMemory(processName: string): number {
+  try {
+    const output = run(`tasklist /FI "IMAGENAME eq ${processName}" /FO CSV 2>nul`)
+    const lines = output.split('\n').filter(l => l.includes(processName))
+    if (lines.length > 0) {
+      // CSV 格式：Image Name,PID,Session Name,Session#,Mem Usage
+      const parts = lines[0].split(',')
+      if (parts.length >= 5) {
+        const memStr = parts[4].replace(/"/g, '').replace(',', '').trim()
+        const memKB = parseInt(memStr) || 0
+        return Math.round(memKB / 1024) // 转换为 MB
+      }
+    }
+  } catch {}
+  return 0
+}
+
 export function detectAgents(): DetectedAgent[] {
   const agents: DetectedAgent[] = []
   const homedir = process.env.USERPROFILE || process.env.HOME || ''
@@ -52,14 +71,16 @@ export function detectAgents(): DetectedAgent[] {
   const mimoInstalled = fileExists(mimoCmd)
   const mimoConfigExists = fileExists(mimoConfig) || fileExists(mimoDesktop)
   const mimoSessions = `${homedir}/.local/share/mimocode/memory/sessions`
+  const mimoRunning = isProcessRunning('mimo.exe')
   agents.push({
     id: 'mimocode', name: 'MiMo Code', description: '小米 MiMo 智能编程助手',
     icon: '🤖', iconPath: null, type: 'cli',
-    status: mimoInstalled ? (isProcessRunning('mimo.exe') ? 'running' : 'idle') : 'offline',
+    status: mimoInstalled ? (mimoRunning ? 'running' : 'idle') : 'offline',
     executablePath: mimoInstalled ? mimoCmd : null,
     configPath: mimoConfigExists ? (fileExists(mimoConfig) ? mimoConfig : mimoDesktop) : null,
     dataPath: mimoConfigExists ? (fileExists(mimoConfig) ? mimoConfig : mimoDesktop) : null,
     diskSpace: mimoConfigExists ? getDirSizeMB(fileExists(mimoConfig) ? mimoConfig : mimoDesktop) : 0,
+    memoryUsage: mimoRunning ? getProcessMemory('mimo.exe') : 0,
     launchCommand: mimoInstalled ? 'mimo' : null,
     chatSessionPath: fileExists(mimoSessions) ? mimoSessions : null,
     processName: 'mimo.exe',
@@ -78,6 +99,7 @@ export function detectAgents(): DetectedAgent[] {
     configPath: fileExists(claudeConfig) ? claudeConfig : null,
     dataPath: fileExists(claudeConfig) ? claudeConfig : null,
     diskSpace: fileExists(claudeConfig) ? getDirSizeMB(claudeConfig) : 0,
+    memoryUsage: isProcessRunning('claude.exe') ? getProcessMemory('claude.exe') : 0,
     launchCommand: claudeInstalled ? 'claude' : null,
     chatSessionPath: fileExists(claudeProjects) ? claudeProjects : null,
     processName: 'claude.exe',
@@ -95,6 +117,7 @@ export function detectAgents(): DetectedAgent[] {
     configPath: fileExists(codexNpmDir) ? codexNpmDir : null,
     dataPath: fileExists(codexLocalDir) ? codexLocalDir : null,
     diskSpace: fileExists(codexLocalDir) ? getDirSizeMB(codexLocalDir) : 0,
+    memoryUsage: isProcessRunning('codex.exe') ? getProcessMemory('codex.exe') : 0,
     launchCommand: codexInstalled ? 'codex' : null,
     chatSessionPath: null,
     processName: 'codex.exe',
@@ -110,6 +133,7 @@ export function detectAgents(): DetectedAgent[] {
     executablePath: fileExists(coffeeExe) ? coffeeExe : null,
     configPath: null, dataPath: fileExists(coffeeDir) ? coffeeDir : null,
     diskSpace: fileExists(coffeeDir) ? getDirSizeMB(coffeeDir) : 0,
+    memoryUsage: isProcessRunning('coffee-cli.exe') ? getProcessMemory('coffee-cli.exe') : 0,
     launchCommand: fileExists(coffeeExe) ? `"${coffeeExe}"` : null,
     chatSessionPath: null,
     processName: 'coffee-cli.exe',
@@ -125,6 +149,7 @@ export function detectAgents(): DetectedAgent[] {
     executablePath: fileExists(doubaoExe) ? doubaoExe : null,
     configPath: null, dataPath: fileExists(doubaoData) ? doubaoData : null,
     diskSpace: fileExists(doubaoData) ? getDirSizeMB(doubaoData) : 0,
+    memoryUsage: isProcessRunning('Doubao.exe') ? getProcessMemory('Doubao.exe') : 0,
     launchCommand: fileExists(doubaoExe) ? `"${doubaoExe}"` : null,
     chatSessionPath: null,
     processName: 'Doubao.exe',
@@ -141,6 +166,7 @@ export function detectAgents(): DetectedAgent[] {
     executablePath: fileExists(kimiExe) ? kimiExe : null,
     configPath: null, dataPath: fileExists(kimiData) ? kimiData : null,
     diskSpace: fileExists(kimiDir) ? getDirSizeMB(kimiDir) : 0,
+    memoryUsage: isProcessRunning('Kimi智能助手.exe') ? getProcessMemory('Kimi智能助手.exe') : 0,
     launchCommand: fileExists(kimiExe) ? `"${kimiExe}"` : null,
     chatSessionPath: fileExists(kimiData) ? kimiData : null,
     processName: 'Kimi智能助手.exe',
@@ -155,6 +181,7 @@ export function detectAgents(): DetectedAgent[] {
     executablePath: null, configPath: null,
     dataPath: fileExists(qianwenData) ? qianwenData : null,
     diskSpace: fileExists(qianwenData) ? getDirSizeMB(qianwenData) : 0,
+    memoryUsage: isProcessRunning('Qianwen.exe') ? getProcessMemory('Qianwen.exe') : 0,
     launchCommand: null, chatSessionPath: fileExists(qianwenData) ? qianwenData : null,
     processName: 'Qianwen.exe',
   })
@@ -169,6 +196,7 @@ export function detectAgents(): DetectedAgent[] {
     executablePath: fileExists(yuanbaoExe) ? yuanbaoExe : null,
     configPath: null, dataPath: null,
     diskSpace: fileExists(yuanbaoDir) ? getDirSizeMB(yuanbaoDir) : 0,
+    memoryUsage: isProcessRunning('yuanbao.exe') ? getProcessMemory('yuanbao.exe') : 0,
     launchCommand: fileExists(yuanbaoExe) ? `"${yuanbaoExe}"` : null,
     chatSessionPath: null,
     processName: 'yuanbao.exe',
@@ -185,6 +213,7 @@ export function detectAgents(): DetectedAgent[] {
     configPath: fileExists(clawConfig) ? clawConfig : null,
     dataPath: fileExists(clawPath) ? clawPath : null,
     diskSpace: fileExists(clawConfig) ? getDirSizeMB(clawConfig) : 0,
+    memoryUsage: 0,
     launchCommand: fileExists(clawPath) ? `cd "${clawPath}" && claude` : null,
     chatSessionPath: fileExists(clawConfig) ? clawConfig : null,
     processName: null,
@@ -201,6 +230,7 @@ export function detectAgents(): DetectedAgent[] {
     executablePath: fileExists(antigravityExe) ? antigravityExe : null,
     configPath: null, dataPath: fileExists(antigravityData) ? antigravityData : null,
     diskSpace: fileExists(antigravityDir) ? getDirSizeMB(antigravityDir) : 0,
+    memoryUsage: isProcessRunning('Antigravity.exe') ? getProcessMemory('Antigravity.exe') : 0,
     launchCommand: fileExists(antigravityExe) ? `"${antigravityExe}"` : null,
     chatSessionPath: fileExists(antigravityData) ? antigravityData : null,
     processName: 'Antigravity.exe',

@@ -208,6 +208,8 @@ function TasksPage() {
   )
 }
 
+import { taskTemplates, type TaskTemplate } from '@/lib/templates'
+
 function CreateTaskModal({
   onClose,
   onCreated,
@@ -219,6 +221,12 @@ function CreateTaskModal({
   const [description, setDescription] = useState('')
   const [agentId, setAgentId] = useState('mimocode')
   const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal')
+
+  const handleSelectTemplate = (template: TaskTemplate) => {
+    setTitle(template.name)
+    setDescription(template.input)
+    setAgentId(template.agentId)
+  }
 
   const agents = [
     { id: 'mimocode', name: 'MiMo Code', icon: '🤖' },
@@ -265,6 +273,22 @@ function CreateTaskModal({
         </div>
 
         <div className="space-y-3">
+          {/* 快速模板 */}
+          <div>
+            <label className="text-sm text-muted-foreground">快速模板</label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {taskTemplates.slice(0, 6).map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleSelectTemplate(template)}
+                  className="px-3 py-1.5 rounded-lg text-xs bg-secondary hover:bg-secondary/80 transition-colors"
+                >
+                  {template.agentIcon} {template.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="text-sm text-muted-foreground">任务标题 *</label>
             <input

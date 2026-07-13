@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.2.0',
+    date: '2026-07-13',
+    changes: [
+      { type: 'feature', text: 'Agent 状态真实检测：显示进程是否运行 + 内存使用量' },
+      { type: 'feature', text: '任务模板：预置常用任务模板' },
+      { type: 'improve', text: 'README.md 更新：更新日志放在最上面' },
+    ],
+  },
+  {
     version: '2.1.0',
     date: '2026-07-13',
     changes: [

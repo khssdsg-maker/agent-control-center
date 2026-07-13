@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.5.0',
+    date: '2026-07-13',
+    changes: [
+      { type: 'feature', text: '快捷键系统：Ctrl+R 刷新、Ctrl+N 新建任务、Ctrl+F 搜索' },
+      { type: 'feature', text: '任务依赖关系：支持任务间前置依赖' },
+      { type: 'feature', text: '页面过渡动画：切换页面时的平滑动画' },
+    ],
+  },
+  {
     version: '2.4.0',
     date: '2026-07-13',
     changes: [

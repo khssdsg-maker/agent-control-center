@@ -1,10 +1,12 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header'
 import Sidebar from './Sidebar'
 import StatusBar from './StatusBar'
 import TabBar from './TabBar'
 
 function MainLayout() {
+  const location = useLocation()
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* 顶部标题栏 */}
@@ -22,7 +24,9 @@ function MainLayout() {
 
           {/* 主内容区 */}
           <main className="flex-1 overflow-y-auto bg-background">
-            <Outlet />
+            <div key={location.pathname} className="animate-fade-in">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

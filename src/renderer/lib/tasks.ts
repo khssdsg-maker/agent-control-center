@@ -7,6 +7,7 @@ export interface Task {
   description: string
   status: 'pending' | 'running' | 'completed' | 'failed'
   priority: 'low' | 'normal' | 'high'
+  dependencies: string[]
   input: string
   output: string
   createdAt: string
@@ -35,6 +36,7 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'status' 
   const newTask: Task = {
     ...task,
     id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    dependencies: task.dependencies || [],
     status: 'pending',
     createdAt: new Date().toISOString(),
     startedAt: null,
@@ -69,4 +71,27 @@ export async function deleteTask(id: string) {
 // 清空任务
 export async function clearTasks() {
   await saveTasks([])
+}
+
+// 检查任务依赖是否满足
+export async function canRunTask(taskId: string): Promise<boolean> {
+  const tasks = await getAllTasks()
+  const task = tasks.find((t) => t.id === taskId)
+  if (!task || task.status !== 'pending') return false
+  return task.dependencies.every((depId) => {
+    const dep = tasks.find((t) => t.id === depId)
+    return dep && dep.status === 'completed'
+  })
+}
+
+// 获取可执行的任务列表
+export async function getRunnableTasks(): Promise<Task[]> {
+  const tasks = await getAllTasks()
+  return tasks.filter((t) => {
+    if (t.status !== 'pending') return false
+    return t.dependencies.every((depId) => {
+      const dep = tasks.find((t) => t.id === depId)
+      return dep && dep.status === 'completed'
+    })
+  })
 }

@@ -165,6 +165,14 @@ function TasksPage() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                    {task.dependencies && task.dependencies.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-xs text-muted-foreground">依赖:</span>
+                        {task.dependencies.map((depId) => (
+                          <Badge key={depId} variant="secondary" className="text-xs">#{depId.substring(0, 8)}</Badge>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground mt-2">
                       {task.agentName} · {new Date(task.createdAt).toLocaleString('zh-CN')}
                     </p>

@@ -4,6 +4,14 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.6.0',
+    date: '2026-07-13',
+    changes: [
+      { type: 'feature', text: 'Agent 实时状态监控：定时检测进程运行状态' },
+      { type: 'feature', text: '任务统计报表：完成率、按 Agent 统计' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-07-13',
     changes: [

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Settings, Save, RotateCcw, Palette, Globe, Image, Info, Upload, X, Bell, Plus, Trash2, Bot, Wallpaper } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Settings, Save, RotateCcw, Palette, Globe, Image, Info, Upload, X, Bell, Plus, Trash2, Bot, Wallpaper, Download, FolderInput } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { t, setLanguage } from '@/lib/i18n'
+import { exportAllData, importData, downloadFile } from '@/lib/export-import'
 
 interface AppSettings {
   theme: string
@@ -287,6 +288,46 @@ function SettingsPage() {
               ))}
             </div>
           ) : <p className="text-sm text-muted-foreground text-center py-4">暂无自定义 Agent</p>}
+        </CardContent>
+      </Card>
+
+      {/* 数据导出/导入 */}
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Download className="h-5 w-5" />数据管理</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={async () => {
+              const data = await exportAllData()
+              const filename = `agent-control-center-backup-${new Date().toISOString().split('T')[0]}.json`
+              downloadFile(data, filename)
+            }}>
+              <Download className="h-4 w-4 mr-2" />
+              导出数据
+            </Button>
+            <Button variant="outline" onClick={() => document.getElementById('import-file')?.click()}>
+              <FolderInput className="h-4 w-4 mr-2" />
+              导入数据
+            </Button>
+            <input
+              id="import-file"
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const text = await file.text()
+                const result = await importData(text)
+                if (result.success) {
+                  alert(result.message)
+                  window.location.reload()
+                } else {
+                  alert(result.message)
+                }
+              }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">导出/导入所有设置、Agent、技能、任务数据</p>
         </CardContent>
       </Card>
 

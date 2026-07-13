@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.1.0',
+    date: '2026-07-13',
+    changes: [
+      { type: 'feature', text: '数据导出/导入：一键备份恢复所有设置和数据' },
+      { type: 'feature', text: '全局搜索：Ctrl+F 搜索 Agent、技能' },
+      { type: 'fix', text: '修复 GlobalSearch 组件导致的崩溃问题' },
+    ],
+  },
+  {
     version: '2.0.1',
     date: '2026-07-12',
     changes: [

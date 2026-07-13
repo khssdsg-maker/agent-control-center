@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import MainLayout from './components/layout/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import GlobalSearch from './components/GlobalSearch'
 import Dashboard from './pages/Dashboard'
 import SkillsPage from './pages/SkillsPage'
 import ChatPage from './pages/ChatPage'
@@ -12,6 +14,23 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import WorkflowPage from './pages/WorkflowPage'
 
 function App() {
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  useEffect(() => {
+    // Ctrl+F 打开搜索
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+      if (e.key === 'Escape') {
+        setSearchOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   return (
     <ErrorBoundary>
       <HashRouter>
@@ -28,6 +47,7 @@ function App() {
             <Route path="agent/:agentId" element={<AgentDetailPage />} />
           </Route>
         </Routes>
+        <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
       </HashRouter>
     </ErrorBoundary>
   )

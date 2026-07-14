@@ -7,10 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('window-close'),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
-  // Shortcut listeners
-  onShortcutSearch: (callback: () => void) => ipcRenderer.on('shortcut-search', callback),
-  onShortcutEscape: (callback: () => void) => ipcRenderer.on('shortcut-escape', callback),
-
   // Agent scanner
   scanAgents: () => ipcRenderer.invoke('scan-agents'),
 
@@ -29,13 +25,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Launch agent
   launchAgent: (agentId: string) => ipcRenderer.invoke('launch-agent', agentId),
 
+  // Task runner
+  taskRun: (taskId: string, command: string, cwd?: string) => ipcRenderer.invoke('task-run', taskId, command, cwd),
+  taskInput: (taskId: string, data: string) => ipcRenderer.send('task-input', taskId, data),
+  taskKill: (taskId: string) => ipcRenderer.send('task-kill', taskId),
+  onTaskOutput: (callback: (taskId: string, data: string) => void) => {
+    ipcRenderer.on('task-output', (_event, taskId, data) => callback(taskId, data))
+  },
+  onTaskClose: (callback: (taskId: string, code: number) => void) => {
+    ipcRenderer.on('task-close', (_event, taskId, code) => callback(taskId, code))
+  },
+
   // Open external path
   openPath: (fullPath: string) => ipcRenderer.invoke('open-path', fullPath),
 
   // Notifications
   sendNotification: (title: string, body: string) => ipcRenderer.invoke('send-notification', title, body),
-  getNotificationsEnabled: () => ipcRenderer.invoke('get-notifications-enabled'),
-  setNotificationsEnabled: (enabled: boolean) => ipcRenderer.invoke('set-notifications-enabled', enabled),
 
   // Data store
   getSettings: () => ipcRenderer.invoke('store-get-settings'),
@@ -46,37 +51,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveSkills: (skills: any[]) => ipcRenderer.invoke('store-save-skills', skills),
   getTasks: () => ipcRenderer.invoke('store-get-tasks'),
   saveTasks: (tasks: any[]) => ipcRenderer.invoke('store-save-tasks', tasks),
-
-  // Custom agents
   getCustomAgents: () => ipcRenderer.invoke('store-get-custom-agents'),
   saveCustomAgents: (agents: any[]) => ipcRenderer.invoke('store-save-custom-agents', agents),
 })
-
-export type ElectronAPI = {
-  minimize: () => void
-  maximize: () => void
-  close: () => void
-  isMaximized: () => Promise<boolean>
-  onShortcutSearch: (callback: () => void) => void
-  onShortcutEscape: (callback: () => void) => void
-  scanAgents: () => Promise<any[]>
-  extractIcon: (exePath: string) => Promise<string | null>
-  checkProcess: (processName: string) => Promise<boolean>
-  scanSkills: () => Promise<any[]>
-  scanChatHistory: () => Promise<any[]>
-  launchAgent: (agentId: string) => Promise<{ success: boolean; message?: string; error?: string }>
-  openPath: (fullPath: string) => Promise<void>
-  sendNotification: (title: string, body: string) => Promise<boolean>
-  getNotificationsEnabled: () => Promise<boolean>
-  setNotificationsEnabled: (enabled: boolean) => Promise<boolean>
-  getSettings: () => Promise<any>
-  saveSettings: (settings: any) => Promise<boolean>
-  getAgents: () => Promise<any[]>
-  saveAgents: (agents: any[]) => Promise<boolean>
-  getSkills: () => Promise<any[]>
-  saveSkills: (skills: any[]) => Promise<boolean>
-  getTasks: () => Promise<any[]>
-  saveTasks: (tasks: any[]) => Promise<boolean>
-  getCustomAgents: () => Promise<any[]>
-  saveCustomAgents: (agents: any[]) => Promise<boolean>
-}

@@ -103,6 +103,26 @@ ipcMain.handle('launch-agent', (_event, agentId: string) => {
   } catch (err: any) { return { success: false, error: err.message } }
 })
 
+// ========== Task Runner ==========
+let taskProcesses: Map<string, any> = new Map()
+
+ipcMain.handle('task-run', (_event, taskId: string, command: string, cwd?: string) => {
+  try {
+    const proc = spawn(command, [], { shell: true, cwd: cwd || process.env.USERPROFILE || '', env: { ...process.env } })
+    taskProcesses.set(taskId, proc)
+    proc.stdout?.on('data', (data: Buffer) => { mainWindow?.webContents.send('task-output', taskId, data.toString()) })
+    proc.stderr?.on('data', (data: Buffer) => { mainWindow?.webContents.send('task-output', taskId, data.toString()) })
+    proc.on('close', (code) => { taskProcesses.delete(taskId); mainWindow?.webContents.send('task-close', taskId, code) })
+    proc.on('error', () => { taskProcesses.delete(taskId); mainWindow?.webContents.send('task-close', taskId, -1) })
+    return { success: true }
+  } catch (err: any) { return { success: false, error: err.message } }
+})
+
+ipcMain.on('task-kill', (_event, taskId: string) => {
+  const proc = taskProcesses.get(taskId)
+  if (proc) { proc.kill(); taskProcesses.delete(taskId) }
+})
+
 // ========== Open External ==========
 ipcMain.handle('open-path', (_event, p: string) => shell.openPath(p))
 

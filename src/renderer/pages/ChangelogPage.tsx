@@ -4,6 +4,15 @@ import { Clock, Tag, CheckCircle } from 'lucide-react'
 
 const changelog = [
   {
+    version: '2.7.0',
+    date: '2026-07-13',
+    changes: [
+      { type: 'feature', text: '任务真正执行：CLI 任务实际调用 Agent 命令行' },
+      { type: 'feature', text: '任务输出实时显示' },
+      { type: 'improve', text: '优化任务执行流程' },
+    ],
+  },
+  {
     version: '2.6.0',
     date: '2026-07-13',
     changes: [
